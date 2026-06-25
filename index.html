@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cotizador — Portada Blanca</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root{
+  --pb-purple:#4519FF;--pb-dark:#22285D;--pb-aqua:#EBFFC4;
+  --bdn-navy:#073752;--bdn-teal:#3EB1C0;
+  --pdm-sky:#6AC3CC;--pdm-navy:#103652;
+  --green:#4caf50;--green-bg:#f0fff4;--green-border:#b2e8a0;
+  --blue-bg:#f4f6ff;--blue-border:#b8c4f5;
+  --warn:#e65100;--warn-bg:#fff3e0;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:#f0f2f5;min-height:100vh;}
+
+/* HEADER */
+header{background:var(--pb-dark);padding:18px 40px;display:flex;align-items:center;gap:16px;
+  box-shadow:0 4px 24px rgba(0,0,0,.25);position:relative;overflow:hidden;}
+header::before{content:'B';position:absolute;right:-20px;top:-30px;font-family:'Montserrat',sans-serif;
+  font-weight:900;font-size:160px;color:rgba(255,255,255,.04);line-height:1;pointer-events:none;}
+.logo-circle{width:48px;height:48px;border-radius:50%;background:var(--pb-purple);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Montserrat',sans-serif;font-weight:900;font-size:22px;color:white;flex-shrink:0;}
+.header-text h1{font-family:'Montserrat',sans-serif;font-weight:800;font-size:18px;color:white;}
+.header-text p{font-size:12px;color:var(--pb-aqua);font-weight:300;letter-spacing:.5px;}
+
+main{max-width:920px;margin:36px auto;padding:0 20px 60px;}
+
+/* SELECTOR */
+.selector-section{background:white;border-radius:20px;padding:28px 32px;
+  box-shadow:0 8px 32px rgba(0,0,0,.08);margin-bottom:24px;}
+.selector-section h2{font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;
+  color:#999;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;}
+.project-tabs{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.proj-tab{flex:1;min-width:170px;border:2px solid #e8e8e8;border-radius:14px;
+  padding:13px 16px;cursor:pointer;transition:all .2s;background:white;text-align:left;}
+.proj-tab:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1);}
+.proj-tab .proj-name{font-family:'Montserrat',sans-serif;font-weight:700;font-size:13px;color:#333;display:block;margin-bottom:2px;}
+.proj-tab .proj-loc{font-size:11px;color:#999;}
+.proj-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;}
+.proj-tab.bdn-active{border-color:var(--bdn-teal);background:linear-gradient(135deg,#073752,#0a4a6e);}
+.proj-tab.bdn-active .proj-name{color:white;}
+.proj-tab.bdn-active .proj-loc{color:var(--bdn-teal);}
+.proj-tab.pdm-active{border-color:var(--pdm-sky);background:linear-gradient(135deg,#103652,#1a4d73);}
+.proj-tab.pdm-active .proj-name{color:white;}
+.proj-tab.pdm-active .proj-loc{color:var(--pdm-sky);}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field-wrap{display:flex;flex-direction:column;gap:6px;}
+.field-wrap label{font-family:'Montserrat',sans-serif;font-weight:600;font-size:11px;color:var(--pb-dark);letter-spacing:.5px;text-transform:uppercase;}
+select,input[type=number],input[type=text]{width:100%;padding:11px 14px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;
+  border:2px solid #e8e8e8;border-radius:12px;background:#fafafa;color:var(--pb-dark);outline:none;transition:border-color .2s;}
+select{appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2322285D' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 13px center;background-size:15px;padding-right:40px;background-color:#fafafa;cursor:pointer;}
+select:focus,input:focus{border-color:var(--pb-purple);}
+input[type=number]::-webkit-inner-spin-button{opacity:.4;}
+
+.moneda-toggle{display:flex;border:2px solid #e8e8e8;border-radius:12px;overflow:hidden;}
+.mon-btn{flex:1;padding:10px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;
+  cursor:pointer;border:none;background:white;color:#bbb;transition:all .15s;letter-spacing:.5px;}
+.mon-btn.act-bdn{background:var(--bdn-navy);color:white;}
+.mon-btn.act-pdm{background:var(--pdm-navy);color:white;}
+
+/* CARD */
+#card-container{min-height:20px;}
+.lot-card{border-radius:20px;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.14);animation:slideUp .3s ease;}
+@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.card-bdn .card-header{background:linear-gradient(135deg,var(--bdn-navy),#0d4d70);padding:22px 30px 18px;position:relative;overflow:hidden;}
+.card-pdm .card-header{background:linear-gradient(135deg,var(--pdm-navy),#1d5a87);padding:22px 30px 18px;position:relative;overflow:hidden;}
+.card-bdn .card-header::after,.card-pdm .card-header::after{content:'';position:absolute;bottom:-25px;right:-25px;
+  width:100px;height:100px;border-radius:50%;}
+.card-bdn .card-header::after{background:var(--bdn-teal);opacity:.12;}
+.card-pdm .card-header::after{background:var(--pdm-sky);opacity:.14;}
+.card-badge{font-family:'Montserrat',sans-serif;font-weight:700;font-size:10px;letter-spacing:1px;
+  text-transform:uppercase;padding:4px 11px;border-radius:20px;display:inline-block;margin-bottom:8px;}
+.card-bdn .card-badge{background:var(--bdn-teal);color:var(--bdn-navy);}
+.card-pdm .card-badge{background:var(--pdm-sky);color:var(--pdm-navy);}
+.lote-id{font-family:'Montserrat',sans-serif;font-weight:900;font-size:42px;color:white;line-height:1;letter-spacing:-2px;}
+.card-bdn .lote-id span{color:var(--bdn-teal);}
+.card-pdm .lote-id span{color:var(--pdm-sky);}
+.proj-label{font-size:11px;color:rgba(255,255,255,.5);font-weight:300;margin-top:2px;}
+
+.card-body{background:white;padding:24px 30px;}
+
+/* SPECS */
+.specs-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
+.spec-item{background:#f7f9fc;border-radius:11px;padding:11px 13px;border-left:3px solid transparent;}
+.card-bdn .spec-item{border-left-color:var(--bdn-teal);}
+.card-pdm .spec-item{border-left-color:var(--pdm-sky);}
+.spec-label{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;}
+.spec-value{font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;color:var(--pb-dark);}
+
+/* PRECIO ÚNICO EN MONEDA ELEGIDA */
+.precio-contado{border-radius:14px;padding:16px 20px;text-align:center;margin-bottom:20px;}
+.precio-contado.moneda-pen{background:#f0f2f5;color:var(--pb-dark);}
+.precio-contado.moneda-usd{background:var(--pb-dark);color:white;}
+.pc-label{font-size:10px;font-weight:400;letter-spacing:1px;text-transform:uppercase;opacity:.65;margin-bottom:4px;}
+.pc-amount{font-family:'Montserrat',sans-serif;font-weight:900;font-size:28px;line-height:1;}
+.pc-note{font-size:9px;opacity:.5;margin-top:3px;letter-spacing:.5px;}
+
+/* UBICACION */
+.ubicacion-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;
+  font-size:11px;font-weight:600;margin-bottom:14px;}
+.card-bdn .ubicacion-tag{background:rgba(62,177,192,.1);color:var(--bdn-navy);border:1px solid var(--bdn-teal);}
+.card-pdm .ubicacion-tag{background:rgba(106,195,204,.1);color:var(--pdm-navy);border:1px solid var(--pdm-sky);}
+.ubicacion-tag svg{width:12px;height:12px;}
+
+/* SEPARADOR */
+.fin-sep{border-top:2px dashed #eee;padding-top:18px;margin-top:2px;}
+.fin-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:11px;letter-spacing:1.5px;
+  text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-bdn .fin-title{color:var(--bdn-navy);}
+.card-pdm .fin-title{color:var(--pdm-navy);}
+.fin-title::after{content:'';flex:1;height:1px;background:#eee;}
+
+/* INICIAL */
+.ini-section{background:#f7f9fc;border-radius:14px;padding:16px 18px;margin-bottom:14px;}
+.ini-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ini-input-wrap{position:relative;flex:1;min-width:160px;}
+.ini-sym{position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;color:var(--pb-dark);}
+.ini-input-wrap input{padding-left:34px;}
+.pct-pill{border-radius:10px;padding:10px 14px;font-family:'Montserrat',sans-serif;font-weight:800;
+  font-size:15px;white-space:nowrap;text-align:center;min-width:64px;}
+.pct-pill.ok-bdn{background:var(--bdn-navy);color:white;}
+.pct-pill.ok-pdm{background:var(--pdm-navy);color:white;}
+.pct-pill.warn{background:var(--warn);color:white;}
+.pct-pill.neutral{background:#ddd;color:#999;}
+
+.regla-tag{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;
+  font-size:10px;font-weight:600;margin-top:9px;}
+.regla-tag.nv0{background:var(--warn-bg);color:var(--warn);border:1.5px solid #ffcc80;}
+.regla-tag.nv1{background:#e8f5e9;color:#2e7d32;border:1.5px solid #a5d6a7;}
+.regla-tag.nv2{background:#e3f2fd;color:#1565c0;border:1.5px solid #90caf9;}
+.regla-tag.nv3{background:#ede7f6;color:#4527a0;border:1.5px solid #ce93d8;}
+
+/* FRACCIONAR */
+.frac-wrap{margin-top:11px;background:white;border-radius:10px;padding:12px 14px;}
+.frac-label{font-size:11px;color:#888;margin-bottom:8px;}
+.frac-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;}
+.frac-btn{padding:5px 10px;border-radius:7px;border:1.5px solid #ddd;
+  font-family:'Montserrat',sans-serif;font-weight:600;font-size:11px;
+  cursor:pointer;background:white;color:#999;transition:all .15s;}
+.frac-btn:hover{border-color:var(--pb-dark);color:var(--pb-dark);}
+.frac-btn.sel-bdn{background:var(--bdn-teal);border-color:var(--bdn-teal);color:var(--bdn-navy);}
+.frac-btn.sel-pdm{background:var(--pdm-sky);border-color:var(--pdm-sky);color:var(--pdm-navy);}
+.frac-result{display:flex;justify-content:space-between;align-items:center;
+  background:#f7f9fc;border-radius:8px;padding:8px 12px;margin-top:6px;}
+.frac-result .fl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;}
+.frac-result .fv{font-family:'Montserrat',sans-serif;font-weight:800;font-size:15px;color:var(--pb-dark);}
+
+/* SALDO */
+.saldo-bar{border-radius:10px;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+.card-bdn .saldo-bar{background:var(--bdn-navy);}
+.card-pdm .saldo-bar{background:var(--pdm-navy);}
+.saldo-bar .sl{font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.6px;}
+.saldo-bar .sv{font-family:'Montserrat',sans-serif;font-weight:800;font-size:17px;color:white;}
+
+/* PLANES */
+.planes-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+.plan-card{border-radius:14px;padding:16px 18px;border:2px solid #eee;}
+.plan-card.si{background:var(--green-bg);border-color:var(--green-border);}
+.plan-card.ci{background:var(--blue-bg);border-color:var(--blue-border);}
+.plan-card.disabled{opacity:.38;pointer-events:none;}
+.plan-badge{display:inline-block;border-radius:20px;padding:3px 10px;
+  font-family:'Montserrat',sans-serif;font-weight:700;font-size:10px;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;}
+.si .plan-badge{background:var(--green-border);color:#2d6a1a;}
+.ci .plan-badge{background:var(--blue-border);color:#22285D;}
+
+/* INPUT CUOTAS PLAN */
+.plan-cuotas-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.plan-cuotas-row label{font-size:11px;color:#888;white-space:nowrap;}
+.plan-cuotas-row input{width:72px;padding:6px 10px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;
+  border:1.5px solid #ddd;border-radius:8px;background:white;color:var(--pb-dark);outline:none;text-align:center;}
+.si input:focus{border-color:var(--green);}
+.ci input:focus{border-color:var(--pb-purple);}
+.plan-cuotas-row .max-hint{font-size:9px;color:#bbb;}
+
+.cuota-result{text-align:center;}
+.cuota-lbl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;}
+.cuota-val{font-family:'Montserrat',sans-serif;font-weight:900;font-size:22px;color:var(--pb-dark);}
+.cuota-sub{font-size:10px;color:#888;margin-top:2px;}
+.plan-note{font-size:10px;color:#aaa;text-align:center;font-style:italic;}
+
+/* AVISO */
+.aviso{background:var(--warn-bg);border:1.5px solid #ffcc80;border-radius:10px;
+  padding:10px 14px;font-size:11px;color:var(--warn);margin-top:10px;font-weight:500;}
+
+/* BOTÓN EXPORTAR */
+.export-bar{text-align:center;margin-top:20px;}
+.btn-export{background:var(--pb-purple);color:white;border:none;border-radius:14px;
+  padding:14px 32px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;
+  cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;
+  box-shadow:0 6px 20px rgba(69,25,255,.3);}
+.btn-export:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(69,25,255,.4);}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:40px 20px;color:#ccc;}
+.empty-state svg{opacity:.3;margin-bottom:12px;}
+.empty-state p{font-size:14px;}
+
+footer{text-align:center;font-size:11px;color:#bbb;margin-top:40px;letter-spacing:.5px;}
+footer strong{color:var(--pb-purple);}
+
+/* ══════════════════════════════════════
+   PDF TEMPLATE (oculto en pantalla)
+══════════════════════════════════════ */
+#pdf-template{display:none;}
+.pdf-page{width:210mm;min-height:297mm;background:white;font-family:'DM Sans',sans-serif;
+  padding:14mm 16mm;box-sizing:border-box;color:#1a1a2e;}
+
+/* PDF header */
+.pdf-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8mm;
+  padding-bottom:6mm;border-bottom:3px solid #22285D;}
+.pdf-logo-area{}
+.pdf-logo-circle{width:44px;height:44px;border-radius:50%;background:#4519FF;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-family:'Montserrat',sans-serif;font-weight:900;font-size:20px;color:white;vertical-align:middle;margin-right:8px;}
+.pdf-brand{font-family:'Montserrat',sans-serif;font-weight:900;font-size:20px;color:#22285D;vertical-align:middle;}
+.pdf-brand-sub{font-size:10px;color:#888;margin-top:2px;}
+.pdf-meta{text-align:right;font-size:10px;color:#888;line-height:1.7;}
+.pdf-meta strong{color:#22285D;font-size:11px;}
+.pdf-title-bar{background:#22285D;color:white;border-radius:10px;padding:10px 18px;margin-bottom:6mm;
+  font-family:'Montserrat',sans-serif;font-weight:800;font-size:15px;letter-spacing:.5px;}
+.pdf-lote-badge{display:inline-block;border-radius:20px;padding:3px 12px;margin-left:10px;
+  font-size:11px;font-weight:700;letter-spacing:.5px;vertical-align:middle;}
+
+/* PDF sections */
+.pdf-grid2{display:grid;grid-template-columns:1fr 1fr;gap:5mm;margin-bottom:5mm;}
+.pdf-box{border-radius:8px;padding:10px 14px;}
+.pdf-box.gray{background:#f5f5f5;}
+.pdf-box.dark{background:#22285D;color:white;}
+.pdf-box.bdn{background:#073752;color:white;}
+.pdf-box.pdm{background:#103652;color:white;}
+.pdf-box.green{background:#f0fff4;border:1.5px solid #b2e8a0;}
+.pdf-box.blue{background:#f4f6ff;border:1.5px solid #b8c4f5;}
+.pdf-box-label{font-size:9px;text-transform:uppercase;letter-spacing:.8px;opacity:.6;margin-bottom:3px;}
+.pdf-box-val{font-family:'Montserrat',sans-serif;font-weight:800;font-size:17px;}
+.pdf-box-sub{font-size:9px;opacity:.6;margin-top:2px;}
+.pdf-divider{border:none;border-top:1.5px dashed #ddd;margin:5mm 0;}
+.pdf-section-title{font-family:'Montserrat',sans-serif;font-weight:800;font-size:11px;
+  letter-spacing:1.5px;text-transform:uppercase;color:#22285D;margin-bottom:4mm;
+  display:flex;align-items:center;gap:6px;}
+.pdf-section-title::after{content:'';flex:1;height:1px;background:#ddd;}
+.pdf-ini-row{display:flex;justify-content:space-between;align-items:center;
+  background:#f5f5f5;border-radius:8px;padding:8px 14px;margin-bottom:3mm;}
+.pdf-ini-row .pil{font-size:10px;color:#888;}
+.pdf-ini-row .piv{font-family:'Montserrat',sans-serif;font-weight:800;font-size:15px;color:#22285D;}
+.pdf-saldo{border-radius:8px;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:5mm;}
+.pdf-saldo .sl{font-size:10px;color:rgba(255,255,255,.6);}
+.pdf-saldo .sv{font-family:'Montserrat',sans-serif;font-weight:900;font-size:17px;color:white;}
+.pdf-planes{display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-bottom:5mm;}
+.pdf-plan{border-radius:8px;padding:10px 14px;}
+.pdf-plan-badge{font-size:9px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px;}
+.pdf-plan .pl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;margin-top:8px;}
+.pdf-plan .pv{font-family:'Montserrat',sans-serif;font-weight:900;font-size:18px;color:#22285D;}
+.pdf-plan .ps{font-size:9px;color:#888;margin-top:1px;}
+
+/* PDF footer */
+.pdf-footer{margin-top:auto;padding-top:6mm;border-top:1.5px solid #eee;
+  display:flex;justify-content:space-between;align-items:flex-end;}
+.pdf-footer-left{font-size:9px;color:#888;line-height:1.8;}
+.pdf-footer-left strong{color:#22285D;}
+.pdf-validez{background:#f5f5f5;border-radius:8px;padding:8px 14px;text-align:center;}
+.pdf-validez .vl{font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;}
+.pdf-validez .vd{font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;color:#22285D;margin-top:2px;}
+.pdf-asterisco{background:#fff3e0;border:1px solid #ffcc80;border-radius:7px;
+  padding:6px 12px;font-size:9px;color:#e65100;margin-top:4mm;line-height:1.5;}
+
+@media(max-width:580px){
+  header{padding:14px 20px;}
+  main{margin:14px auto;}
+  .selector-section{padding:16px 18px;}
+  .row2{grid-template-columns:1fr;}
+  .planes-grid{grid-template-columns:1fr;}
+  .lote-id{font-size:32px;}
+  .card-body{padding:16px 18px;}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo-circle">B</div>
+  <div class="header-text">
+    <h1>Portada Blanca</h1>
+    <p>Constructora &amp; Inmobiliaria · Cotizador de Lotes</p>
+  </div>
+</header>
+
+<main>
+  <div class="selector-section">
+    <h2>Proyecto y Lote</h2>
+    <div class="project-tabs">
+      <div class="proj-tab" id="tab-bdn" onclick="selectProject('bdn')">
+        <span class="proj-dot" style="background:var(--bdn-teal)"></span>
+        <span class="proj-name">Brisas de Naylamp</span>
+        <div class="proj-loc">📍 Lambayeque</div>
+      </div>
+      <div class="proj-tab" id="tab-pdm" onclick="selectProject('pdm')">
+        <span class="proj-dot" style="background:var(--pdm-sky)"></span>
+        <span class="proj-name">Puerta del Mar</span>
+        <div class="proj-loc">📍 Pimentel</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field-wrap">
+        <label>Lote</label>
+        <select id="lot-select" onchange="onLotChange()">
+          <option value="">— Selecciona un lote —</option>
+        </select>
+      </div>
+      <div class="field-wrap">
+        <label>Moneda de cotización</label>
+        <div class="moneda-toggle">
+          <button class="mon-btn" id="btn-pen" onclick="setMoneda('PEN')">S/ SOLES</button>
+          <button class="mon-btn" id="btn-usd" onclick="setMoneda('USD')">$ DÓLARES</button>
+        </div>
+      </div>
+    </div>
+    <div class="field-wrap" style="margin-top:14px;">
+      <label>Asesor Inmobiliario</label>
+      <select id="vendedor-select">
+        <option value="">— Selecciona el asesor —</option>
+        <option value="FERNANDEZ FRIAS MARIA DEYSI|921335028">Fernandez Frias Maria Deysi</option>
+        <option value="HUANCAS MUÑOZ MARIA KATHIA|932543587">Huancas Muñoz Maria Kathia</option>
+        <option value="MEJIA CORTEZ MIRKO DAZU|956703298">Mejia Cortez Mirko Dazu</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="card-container">
+    <div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <p>Elige un proyecto y un lote para ver su cotización</p>
+    </div>
+  </div>
+
+  <footer>
+    <strong>Portada Blanca</strong> · Cl. Izaga N°778, Chiclayo · Cl. Bolívar N°306, Ferreñafe<br>
+    932 543 587 / 932 475 864 · "La puerta de ingreso a tu felicidad"
+  </footer>
+</main>
+
+<!-- PDF oculto -->
+<div id="pdf-template"></div>
+
+<script>
+// ── TASA: TEA 22% → tasa mensual fija ──
+const TASA_MENSUAL = Math.pow(1.22, 1/12) - 1; // ≈ 0.016736
+function getTasa(n){ return TASA_MENSUAL; }
+
+// ── DATA ──
+const DATA={
+  bdn:{name:"Brisas de Naylamp",location:"Lambayeque",theme:"bdn",
+    lots:[
+      {id:"A1",area:305.51,obs:"Cerca Av. Ingreso",usd:22760,pen:79660},
+      {id:"A2",area:300.79,obs:"Cerca Av. Ingreso",usd:22410,pen:78440},
+      {id:"A3",area:303.66,obs:"Cerca Av. Ingreso",usd:22630,pen:79210},
+      {id:"A4",area:320.52,obs:"Cerca Av. Ingreso",usd:23880,pen:83580},
+      {id:"A8",area:309.97,obs:"—",usd:22010,pen:77040},
+      {id:"B2",area:300,obs:"Cerca Av. Ingreso",usd:22350,pen:78230},
+      {id:"B3",area:300,obs:"Cerca Av. Ingreso",usd:22350,pen:78230},
+      {id:"B4",area:300,obs:"Cerca Av. Ingreso",usd:22350,pen:78230},
+      {id:"B8",area:325.96,obs:"—",usd:22820,pen:79870},
+      {id:"B9",area:355.39,obs:"—",usd:24880,pen:87080},
+      {id:"B10",area:300,obs:"—",usd:21600,pen:75600},
+      {id:"B11",area:300,obs:"—",usd:21600,pen:75600},
+      {id:"B13",area:300,obs:"Cerca Av. Ingreso",usd:22350,pen:78230},
+      {id:"B14",area:300,obs:"Cerca Av. Ingreso",usd:22350,pen:78230},
+      {id:"B15",area:300,obs:"Cerca Av. Ingreso",usd:22350,pen:78230},
+      {id:"B16",area:300,obs:"Esquina Av. Ingreso",usd:22800,pen:79800},
+      {id:"C1",area:300,obs:"Esquina Av. Ingreso",usd:22800,pen:79800},
+      {id:"C3",area:300,obs:"B Cerca Av. Ingreso",usd:21900,pen:76650},
+      {id:"C4",area:300,obs:"B Cerca Av. Ingreso",usd:21900,pen:76650},
+      {id:"C6",area:300,obs:"—",usd:21600,pen:75600},
+      {id:"C7",area:300,obs:"—",usd:21600,pen:75600},
+      {id:"C8",area:329.38,obs:"—",usd:23060,pen:80710},
+      {id:"C9",area:308.2,obs:"—",usd:21600,pen:75600},
+      {id:"C10",area:300,obs:"—",usd:21600,pen:75600},
+      {id:"C11",area:300,obs:"—",usd:21600,pen:75600},
+      {id:"C12",area:300,obs:"—",usd:21600,pen:75600},
+      {id:"C14",area:300,obs:"B Cerca Av. Ingreso",usd:21900,pen:76650},
+      {id:"C15",area:300,obs:"B Cerca Av. Ingreso",usd:21900,pen:76650},
+      {id:"C16",area:300,obs:"Esquina Av. Ingreso",usd:22800,pen:79800},
+      {id:"D1",area:340,obs:"Esquina Av. Ingreso",usd:25840,pen:90440},
+      {id:"D2",area:340,obs:"B Cerca Av. Ingreso",usd:24820,pen:86870},
+      {id:"D3",area:340,obs:"B Cerca Av. Ingreso",usd:24820,pen:86870},
+      {id:"D4",area:340,obs:"B Cerca Av. Ingreso",usd:24820,pen:86870},
+      {id:"D5",area:340,obs:"—",usd:23800,pen:83300},
+      {id:"D6",area:340,obs:"—",usd:23800,pen:83300},
+      {id:"D7",area:332.1,obs:"—",usd:23250,pen:81380},
+      {id:"D8",area:310.66,obs:"—",usd:21750,pen:76130},
+      {id:"D9",area:340,obs:"—",usd:23800,pen:83300},
+      {id:"D10",area:340,obs:"—",usd:23800,pen:83300},
+      {id:"D11",area:340,obs:"—",usd:23800,pen:83300},
+      {id:"D12",area:340,obs:"—",usd:23800,pen:83300},
+      {id:"D13",area:340,obs:"—",usd:23800,pen:83300},
+      {id:"D14",area:340,obs:"Esquina Av. Ingreso",usd:25840,pen:90440},
+      {id:"E2",area:347.08,obs:"—",usd:19000,pen:66500},
+      {id:"E3",area:304.85,obs:"—",usd:17000,pen:59500},
+      {id:"F1",area:350.43,obs:"—",usd:17530,pen:61360},
+      {id:"F2",area:301.45,obs:"—",usd:17000,pen:59500},
+      {id:"F3",area:300.87,obs:"—",usd:17000,pen:59500},
+      {id:"F4",area:307.34,obs:"—",usd:22750,pen:79630},
+      {id:"F5",area:335.48,obs:"—",usd:25000,pen:87500},
+      {id:"F6",area:350.47,obs:"—",usd:26120,pen:91420},
+      {id:"F7",area:343.88,obs:"—",usd:25620,pen:89670},
+      {id:"F8",area:343.88,obs:"—",usd:23680,pen:82880},
+    ]},
+  pdm:{name:"Puerta del Mar",location:"Pimentel",theme:"pdm",
+    lots:[
+      {etapa:1,id:"D1",area:108,vista:"Esquina",frente:6,largo:18,usd:42000,pen:147000},
+      {etapa:1,id:"D2",area:108,vista:"Calle",frente:6,largo:18,usd:42000,pen:147000},
+      {etapa:1,id:"D3",area:108,vista:"Calle",frente:6,largo:18,usd:42000,pen:147000},
+      {etapa:1,id:"D4",area:108,vista:"Calle",frente:6,largo:18,usd:42000,pen:147000},
+      {etapa:1,id:"E9",area:128.8,vista:"Esquina",frente:8,largo:16.1,usd:52290,pen:183020},
+      {etapa:1,id:"G8",area:90,vista:"Calle",frente:6,largo:15,usd:33490,pen:117220},
+      {etapa:1,id:"G9",area:90,vista:"Calle",frente:6,largo:15,usd:33490,pen:117220},
+      {etapa:1,id:"G21",area:90,vista:"Calle",frente:6,largo:15,usd:33490,pen:117220},
+      {etapa:1,id:"G22",area:90,vista:"Calle",frente:6,largo:15,usd:33490,pen:117220},
+      {etapa:2,id:"H1",area:112.5,vista:"Esquina",frente:7.5,largo:15,usd:36560,pen:127960},
+      {etapa:2,id:"H2",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H3",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H4",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H5",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H6",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H7",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H8",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H18",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H19",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H20",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H21",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H22",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H23",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H24",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H25",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H26",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H27",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H28",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"H29",area:112.5,vista:"Esquina",frente:7.5,largo:15,usd:36560,pen:127960},
+      {etapa:2,id:"I4",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"I5",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"I6",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"I7",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"I8",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"I9",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"I11",area:108,vista:"Parque",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"I12",area:108,vista:"Parque",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"I13",area:108,vista:"Parque",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"I14",area:108,vista:"Esquina",frente:6,largo:18,usd:36110,pen:126390},
+      {etapa:2,id:"J2",area:96.6,vista:"Calle",frente:6,largo:16.1,usd:30100,pen:105350},
+      {etapa:2,id:"J3",area:96.6,vista:"Esquina",frente:6,largo:16.1,usd:32970,pen:115400},
+      {etapa:2,id:"J6",area:96.6,vista:"Calle",frente:6,largo:16.1,usd:30100,pen:105350},
+      {etapa:2,id:"K1",area:129.42,vista:"Esquina",frente:7.19,largo:18,usd:44880,pen:157080},
+      {etapa:2,id:"K2",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"K3",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"K4",area:108,vista:"Parque",frente:6,largo:18,usd:36280,pen:126980},
+      {etapa:2,id:"K5",area:108,vista:"Parque",frente:6,largo:18,usd:36280,pen:126980},
+      {etapa:2,id:"K6",area:108,vista:"Parque",frente:6,largo:18,usd:36280,pen:126980},
+      {etapa:2,id:"K7",area:108,vista:"Parque",frente:6,largo:18,usd:36280,pen:126980},
+      {etapa:2,id:"K8",area:108,vista:"Parque",frente:6,largo:18,usd:36280,pen:126980},
+      {etapa:2,id:"K9",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K10",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K11",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K12",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K13",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K14",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K15",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K16",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K17",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K18",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K19",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K20",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K21",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K22",area:108,vista:"Calle",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"K23",area:135,vista:"Esquina",frente:7.5,largo:18,usd:43720,pen:153020},
+      {etapa:2,id:"L2",area:120,vista:"Parque",frente:6,largo:20,usd:38950,pen:136330},
+      {etapa:2,id:"L3",area:120,vista:"Parque",frente:6,largo:20,usd:38950,pen:136330},
+      {etapa:2,id:"L4",area:120,vista:"Parque",frente:6,largo:20,usd:38950,pen:136330},
+      {etapa:2,id:"L5",area:120,vista:"Parque",frente:6,largo:20,usd:38950,pen:136330},
+      {etapa:2,id:"L6",area:120,vista:"Parque",frente:6,largo:20,usd:38950,pen:136330},
+      {etapa:2,id:"L8",area:103.2,vista:"Calle",frente:6,largo:17.2,usd:32150,pen:112530},
+      {etapa:2,id:"L9",area:103.2,vista:"Calle",frente:6,largo:17.2,usd:32150,pen:112530},
+      {etapa:2,id:"L10",area:103.2,vista:"Calle",frente:6,largo:17.2,usd:32150,pen:112530},
+      {etapa:2,id:"L11",area:103.2,vista:"Calle",frente:6,largo:17.2,usd:32150,pen:112530},
+      {etapa:2,id:"L12",area:137.6,vista:"Esquina",frente:8,largo:17.2,usd:46010,pen:161040},
+      {etapa:2,id:"L13",area:120,vista:"Calle",frente:6,largo:20,usd:37380,pen:130830},
+      {etapa:2,id:"L14",area:120,vista:"Calle",frente:6,largo:20,usd:37380,pen:130830},
+      {etapa:2,id:"L15",area:120,vista:"Calle",frente:6,largo:20,usd:37380,pen:130830},
+      {etapa:2,id:"L16",area:120,vista:"Calle",frente:6,largo:20,usd:37380,pen:130830},
+      {etapa:2,id:"L17",area:120,vista:"Calle",frente:6,largo:20,usd:37380,pen:130830},
+      {etapa:2,id:"L18",area:120,vista:"Esquina",frente:8,largo:15,usd:40220,pen:140770},
+      {etapa:2,id:"L19",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"L20",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"L21",area:90,vista:"Calle",frente:6,largo:15,usd:28050,pen:98180},
+      {etapa:2,id:"M1",area:108,vista:"Esquina",frente:6,largo:18,usd:35130,pen:122960},
+      {etapa:2,id:"M2",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"M3",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"M4",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"M5",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"M6",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"M7",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"M8",area:108,vista:"Calle",frente:6,largo:18,usd:33650,pen:117780},
+      {etapa:2,id:"M9",area:216,vista:"Calle",frente:12,largo:18,usd:67290,pen:235520},
+      {etapa:2,id:"M12",area:133.65,vista:"Esquina",frente:9,largo:16.71,usd:44710,pen:156490},
+      {etapa:2,id:"M13",area:126.4,vista:"Calle",frente:7.56,largo:16.71,usd:39380,pen:137830},
+      {etapa:2,id:"M14",area:126.4,vista:"Calle",frente:7.56,largo:16.71,usd:39380,pen:137830},
+      {etapa:2,id:"M15",area:133.65,vista:"Esquina",frente:8,largo:16.71,usd:43300,pen:151550},
+    ]}
+};
+
+// ── ESTADO ──
+let activeProject=null, moneda='PEN';
+let ST={inicialMonto:0, fracCuotas:1, siCuotas:0, ciCuotas:0, precioCustom:0};
+
+// ── HELPERS ──
+function fmt(n){return Number(n).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function S(){return moneda==='PEN'?'S/':'$';}
+function precioBase(lot){return moneda==='PEN'?lot.pen:lot.usd;}
+function precio(lot){
+  return ST.precioCustom>0?ST.precioCustom:precioBase(lot);
+}
+
+function reglaNivel(pct){
+  if(pct<0.10) return 0;
+  if(pct<0.15) return 1;   // 10-14%
+  if(pct<0.20) return 2;   // 15-19%
+  if(pct<0.25) return 3;   // 20-24%
+  return 4;                  // 25%+
+}
+function maxSI(nivel){return 0;} // Sin cuotas sin interés
+function reglaLabel(nivel){
+  return['',
+    '✅ 10–14% → Inicial fraccionable en hasta 2 cuotas',
+    '✅ 15–19% → Inicial fraccionable en hasta 3 cuotas',
+    '✅ 20–24% → Inicial fraccionable en hasta 4 cuotas',
+    '✅ 25% o más → Inicial fraccionable en hasta 5 cuotas',
+  ][nivel]||'';
+}
+function reglaCls(nivel){return['nv0','nv1','nv2','nv3','nv3'][nivel];}
+
+// Fecha/validez
+function fmtFecha(d){
+  const M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return`${d.getDate()} de ${M[d.getMonth()]} de ${d.getFullYear()}`;
+}
+function calcValidez(){
+  const hoy=new Date();
+  const vence=new Date(hoy); vence.setDate(hoy.getDate()+4);
+  // Últimos 4 días del mes
+  const ultimoDia=new Date(hoy.getFullYear(),hoy.getMonth()+1,0).getDate();
+  const esFin=(ultimoDia-hoy.getDate())<=3;
+  return{hoy,vence,esFin};
+}
+
+// ── EVENTOS ──
+function setMoneda(m){
+  moneda=m;
+  const th=activeProject||'bdn';
+  document.getElementById('btn-pen').className ='mon-btn'+(m==='PEN'?` act-${th}`:'');
+  document.getElementById('btn-usd').className ='mon-btn'+(m==='USD'?` act-${th}`:'');
+  renderCard();
+}
+
+function selectProject(p){
+  activeProject=p; ST={inicialMonto:0,fracCuotas:1,siCuotas:0,ciCuotas:0,precioCustom:0};
+  document.getElementById('tab-bdn').className='proj-tab'+(p==='bdn'?' bdn-active':'');
+  document.getElementById('tab-pdm').className='proj-tab'+(p==='pdm'?' pdm-active':'');
+  document.getElementById('btn-pen').className='mon-btn'+(moneda==='PEN'?` act-${p}`:'');
+  document.getElementById('btn-usd').className='mon-btn'+(moneda==='USD'?` act-${p}`:'');
+  const sel=document.getElementById('lot-select');
+  sel.innerHTML='<option value="">— Selecciona un lote —</option>';
+  DATA[p].lots.forEach(l=>{
+    const o=document.createElement('option');
+    o.value=l.id;
+    o.textContent=p==='pdm'?`Etapa ${l.etapa} — Lote ${l.id} (${l.area} m²)`:`Lote ${l.id} (${l.area} m²)`;
+    sel.appendChild(o);
+  });
+  document.getElementById('card-container').innerHTML=`
+    <div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 12h6M12 9v6"/>
+      </svg><p>Selecciona un lote del desplegable</p></div>`;
+}
+
+function onLotChange(){
+  if(!activeProject) return;
+  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
+  const lot=DATA[activeProject].lots.find(l=>l.id===lotId); if(!lot) return;
+  ST.inicialMonto=0;
+  ST.fracCuotas=1; ST.siCuotas=0; ST.ciCuotas=0; ST.precioCustom=0;
+  renderCard();
+}
+
+function onInicialInput(v){
+  ST.inicialMonto=parseFloat(v)||0;
+  updateCalc();
+}
+function onPrecioInput(v){
+  if(!activeProject) return;
+  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
+  const lot=DATA[activeProject].lots.find(l=>l.id===lotId); if(!lot) return;
+  const val=parseFloat(v)||0;
+  ST.precioCustom=val>0?val:0;
+  const disp=document.getElementById('precio-display');
+  if(disp) disp.textContent=`${S()} ${fmt(ST.precioCustom||precioBase(lot))}`;
+  updateCalc();
+}
+function setFrac(n){ST.fracCuotas=n; updateCalc();}
+function onSiInput(v){ ST.siCuotas=parseInt(v)||0; updateCalc(); }
+function onCiInput(v){ ST.ciCuotas=parseInt(v)||0; updateCalc(); }
+
+// ── ACTUALIZA SOLO LOS RESULTADOS (sin tocar inputs) ──
+function updateCalc(){
+  if(!activeProject) return;
+  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
+  const proj=DATA[activeProject];
+  const lot=proj.lots.find(l=>l.id===lotId); if(!lot) return;
+  const th=proj.theme;
+  const p=precio(lot), sx=S();
+  const ini=ST.inicialMonto;
+  const pct=p>0?ini/p:0;
+  const pctStr=(pct*100).toFixed(1)+'%';
+  const saldo=Math.max(0,p-ini);
+  const nivel=reglaNivel(pct);
+  const mxSI=maxSI(nivel);
+
+  // SOLO CUOTAS CON INTERÉS — TEA 22% (fórmula francesa)
+  const nCI = ST.ciCuotas;
+  const tasa = TASA_MENSUAL;
+  let cuotaCI = 0;
+  if(nCI > 0 && saldo > 0){
+    cuotaCI = saldo * tasa / (1 - Math.pow(1 + tasa, -nCI));
+  }
+  const maxCI = 120;
+
+  const g=id=>document.getElementById(id);
+
+  // badge %  const g=id=>document.getElementById(id);
+
+  // badge %
+  const pill=g('pct-pill');
+  if(pill){pill.textContent=ini>0?pctStr:'—';pill.className='pct-pill '+(ini>0?(pct<0.10?'warn':`ok-${th}`):'neutral');}
+
+  // regla
+  const rt=g('regla-tag');
+  if(rt){
+    if(ini>0&&pct<0.10){rt.style.display='';rt.className='regla-tag nv0';rt.textContent=`⚠️ Inicial mínima: 10% (${sx} ${fmt(p*0.10)})`;}
+    else if(ini>0&&nivel>=1){rt.style.display='';rt.className=`regla-tag ${reglaCls(nivel)}`;rt.textContent=reglaLabel(nivel);}
+    else rt.style.display='none';
+  }
+
+  // fraccionar — máx cuotas según tramo de inicial
+  const maxFrac = pct>=0.25?5 : pct>=0.20?4 : pct>=0.15?3 : pct>=0.10?2 : 0;
+  const fw=g('frac-wrap');
+  if(fw){
+    if(maxFrac>0&&ini>0){
+      fw.style.display='';
+      [1,2,3,4,5].forEach(n=>{
+        const b=g(`frac-btn-${n}`);
+        if(b){
+          b.style.display = n<=maxFrac ? '' : 'none';
+          b.className=`frac-btn ${ST.fracCuotas===n?`sel-${th}`:''}`;
+        }
+      });
+      // Si la selección actual supera el nuevo máximo, resetear a 1
+      if(ST.fracCuotas>maxFrac){ ST.fracCuotas=1; }
+      const fr=g('frac-result');
+      if(fr){
+        if(ST.fracCuotas>=2){fr.style.display='flex';const fv=fr.querySelector('.fv');if(fv)fv.textContent=`${sx} ${fmt(ini/ST.fracCuotas)} × ${ST.fracCuotas}`;}
+        else fr.style.display='none';
+      }
+    } else fw.style.display='none';
+  }
+
+  // referencia de iniciales (se actualiza con el precio)
+  const rg=g('ref-grid');
+  if(rg){
+    rg.innerHTML=[10,15,20,25,30].map(pct=>`
+      <div style="background:white;border-radius:9px;padding:8px 6px;text-align:center;
+        border-top:3px solid ${pct>=25?'var(--green)':pct>=20?'#90caf9':pct>=15?'#b8c4f5':'#ffcc80'};">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:14px;color:var(--pb-dark);">${pct}%</div>
+        <div style="font-size:10px;color:#888;margin-top:2px;">${sx} ${fmt(Math.round(p*pct/100))}</div>
+      </div>`).join('');
+  }
+
+  // saldo
+  const sb=g('saldo-bar');
+  if(sb){
+    if(pct>=0.10&&saldo>0){sb.style.display='flex';const sv=sb.querySelector('.sv');if(sv)sv.textContent=`${sx} ${fmt(saldo)}`;}
+    else sb.style.display='none';
+  }
+
+  // planes
+  const pw=g('planes-wrap'), av=g('planes-aviso');
+  if(pct>=0.10&&saldo>0){
+    if(pw)pw.style.display=''; if(av)av.style.display='none';
+
+    // Solo CI con TEA 22%
+    const cc=g('ci-card');if(cc)cc.className=`plan-card ci`;
+    const cmx=g('ci-max');if(cmx)cmx.textContent=`máx. ${maxCI}m`;
+    const cif=g('ci-field');if(cif)cif.max=maxCI;
+    const cv=g('ci-val');
+    if(cv) cv.textContent = nCI>0 ? `${sx} ${fmt(cuotaCI)}` : '—';
+    const cs=g('ci-sub');
+    if(cs) cs.textContent = nCI>0 ? `${nCI} cuotas · TEA 22%` : 'Ingresa número de cuotas';
+
+    const tc=g('total-cuotas');
+    if(tc) tc.innerHTML=`<strong>${nCI} meses</strong> de financiamiento (máx. ${maxCI})${nCI>maxCI?` <span style="color:var(--warn)">⚠️ Excede el máximo</span>`:''}`;
+
+  } else {
+    if(pw)pw.style.display='none';
+    if(av){
+      if(ini>0&&pct<0.10){av.style.display='';av.textContent=`⚠️ Inicial mínima: 10% del precio del lote: ${sx} ${fmt(p*0.10)}`;}
+      else av.style.display='none';
+    }
+  }
+}
+
+// ── RENDER COMPLETO (solo al cambiar lote/proyecto/moneda) ──
+function renderCard(){
+  if(!activeProject) return;
+  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
+  const proj=DATA[activeProject];
+  const lot=proj.lots.find(l=>l.id===lotId); if(!lot) return;
+  const th=proj.theme, isBDN=th==='bdn', isPDM=th==='pdm';
+  const p=precio(lot), sx=S();
+  const pcClass=moneda==='PEN'?'moneda-pen':'moneda-usd';
+  const monedaLabel=moneda==='PEN'?'Soles (PEN)':'Dólares (USD)';
+  const mxSI=maxSI(reglaNivel(0));
+  const maxCI=96-ST.siCuotas;
+
+  let extraSpecs='';
+  if(isPDM) extraSpecs=`
+    <div class="spec-item"><div class="spec-label">Frente</div><div class="spec-value">${lot.frente} m</div></div>
+    <div class="spec-item"><div class="spec-label">Largo</div><div class="spec-value">${lot.largo} m</div></div>
+    <div class="spec-item"><div class="spec-label">Etapa</div><div class="spec-value">${lot.etapa}</div></div>`;
+
+  const ubicTag=isBDN&&lot.obs&&lot.obs!=='—'
+    ?`<div class="ubicacion-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>${lot.obs}</div>`
+    :isPDM?`<div class="ubicacion-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/></svg>Vista: ${lot.vista}</div>`:'';
+
+  const fracBtns=[1,2,3,4,5].map(n=>`<button id="frac-btn-${n}" class="frac-btn" onclick="setFrac(${n})">${n}c</button>`).join('');
+
+  const html=`
+  <div class="lot-card card-${th}">
+    <div class="card-header">
+      <div class="card-badge">${proj.location}</div>
+      <div class="lote-id">Lote <span>${lot.id}</span></div>
+      <div class="proj-label">${proj.name}</div>
+    </div>
+    <div class="card-body">
+      ${ubicTag}
+      <div class="specs-grid">
+        <div class="spec-item"><div class="spec-label">Área Total</div><div class="spec-value">${lot.area} m²</div></div>
+        ${extraSpecs}
+      </div>
+      <div class="precio-contado ${pcClass}">
+        <div class="pc-label">${monedaLabel} · Precio al contado</div>
+        <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-top:4px;">
+          <div id="precio-display" style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:26px;">${sx} ${fmt(p)}</div>
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:6px;justify-content:center;">
+          <span style="font-size:11px;opacity:.6;">Modificar precio:</span>
+          <div style="position:relative;">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;font-size:13px;color:var(--pb-dark);">${sx}</span>
+            <input type="number" id="precio-field" value="${p}" min="0" step="1"
+              style="padding:6px 10px 6px 28px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);
+                background:rgba(255,255,255,.15);font-family:'DM Sans',sans-serif;font-weight:600;
+                font-size:13px;color:var(--pb-dark);width:140px;outline:none;backdrop-filter:blur(4px);"
+              oninput="onPrecioInput(this.value)"/>
+          </div>
+        </div>
+        <div class="pc-note" style="margin-top:4px;">* Puedes modificar el precio a más o a menos</div>
+      </div>
+      <div class="fin-sep">
+        <div class="fin-title">Financiamiento</div>
+        <div class="ini-section">
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;color:var(--pb-dark);margin-bottom:10px;">💰 Cuota Inicial</div>
+          <div class="ini-row">
+            <div class="ini-input-wrap">
+              <span class="ini-sym">${sx}</span>
+              <input type="number" id="ini-field" value="" min="0" step="1"
+                oninput="onInicialInput(this.value)" placeholder="Ingresa el monto inicial"/>
+            </div>
+            <div id="pct-pill" class="pct-pill neutral">—</div>
+          </div>
+          <div id="regla-tag" class="regla-tag" style="display:none;"></div>
+          <div id="frac-wrap" class="frac-wrap" style="display:none;">
+            <div class="frac-label">Fraccionar inicial en cuotas:</div>
+            <div class="frac-btns">${fracBtns}</div>
+            <div id="frac-result" class="frac-result" style="display:none;">
+              <span class="fl">Cuota inicial</span><span class="fv"></span>
+            </div>
+          </div>
+          <div id="saldo-bar" class="saldo-bar" style="display:none;">
+            <span class="sl">Saldo a financiar</span><span class="sv"></span>
+          </div>
+        </div>
+
+        <!-- REFERENCIA DE INICIALES — justo debajo de cuota inicial -->
+        <div style="background:#f7f9fc;border-radius:14px;padding:12px 14px;margin-bottom:14px;">
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;
+            text-transform:uppercase;color:var(--pb-dark);margin-bottom:10px;">📊 Referencia de Iniciales</div>
+          <div id="ref-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;"></div>
+        </div>
+
+        <div id="planes-aviso" class="aviso" style="display:none;"></div>
+        <div id="planes-wrap" style="display:none;">
+          <div class="plan-card ci" id="ci-card" style="max-width:100%;">
+            <div class="plan-badge">📅 Financiamiento · TEA 22%</div>
+            <div class="plan-cuotas-row">
+              <label>Número de cuotas:</label>
+              <input id="ci-field" type="number" min="0" max="120" value="${ST.ciCuotas}" oninput="onCiInput(this.value)">
+              <span id="ci-max" class="max-hint">máx. 120m</span>
+            </div>
+            <div class="cuota-result">
+              <div class="cuota-lbl">Cuota mensual</div>
+              <div id="ci-val" class="cuota-val">—</div>
+              <div id="ci-sub" class="cuota-sub">Ingresa número de cuotas</div>
+            </div>
+          </div>
+          <div id="total-cuotas" style="text-align:right;font-size:10px;color:#aaa;margin-top:6px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <div class="export-bar">
+    <button class="btn-export" onclick="exportPDF()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      Exportar Cotización PDF
+    </button>
+  </div>`;
+
+  document.getElementById('card-container').innerHTML=html;
+  updateCalc();
+}
+
+
+// ── EXPORTAR PDF ──
+function exportPDF(){
+  try {
+  if(!activeProject) return;
+  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
+  const proj=DATA[activeProject];
+  const lot=proj.lots.find(l=>l.id===lotId); if(!lot) return;
+  const th=proj.theme, isBDN=th==='bdn', isPDM=th==='pdm';
+  const p=precio(lot), sx=S();
+  const ini=ST.inicialMonto;
+  const pct=p>0?ini/p:0;
+  const pctStr=(pct*100).toFixed(1)+'%';
+  const saldo=Math.max(0,p-ini);
+  const nivel=reglaNivel(pct);
+  const nSI=ST.siCuotas;
+  let nCI=ST.ciCuotas;
+  const totalMeses=nCI;
+  let cuotaCI=0;
+  if(nCI===0&&nSI>0){ nCI=nSI; } // fallback si había cuotas SI guardadas
+  const nCIf=nCI;
+  if(nCIf>0&&saldo>0){
+    cuotaCI=saldo*TASA_MENSUAL/(1-Math.pow(1+TASA_MENSUAL,-nCIf));
+  }
+  const montoCI=saldo;
+  const {hoy,vence,esFin}=calcValidez();
+  const TC=isBDN?'#073752':'#103652';   // theme color
+  const AC=isBDN?'#3EB1C0':'#6AC3CC';  // accent color
+  const monedaLabel=moneda==='PEN'?'Soles (S/)':'Dólares ($)';
+  const cuotaIniStr=ST.fracCuotas>=2
+    ?`${sx} ${fmt(ini/ST.fracCuotas)} &times; ${ST.fracCuotas} cuotas`
+    :`${sx} ${fmt(ini)} <span style="font-size:11px;font-weight:400;color:#888;">(pago único)</span>`;
+
+  // helpers inline
+  const box=(label,val,sub='',bg='#f5f5f5',col='#22285D')=>`
+    <div style="background:${bg};border-radius:8px;padding:10px 14px;flex:1;min-width:90px;">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:${bg==='#f5f5f5'?'#999':'rgba(255,255,255,.6)'};margin-bottom:4px;">${label}</div>
+      <div style="font-family:Arial,sans-serif;font-weight:700;font-size:16px;color:${bg==='#f5f5f5'?col:'white'};">${val}</div>
+      ${sub?`<div style="font-size:9px;color:${bg==='#f5f5f5'?'#aaa':'rgba(255,255,255,.5)'};margin-top:2px;">${sub}</div>`:''}
+    </div>`;
+
+  const secTitle=(t)=>`
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+      color:#22285D;margin:14px 0 8px;display:flex;align-items:center;gap:8px;">
+      ${t}<div style="flex:1;height:1px;background:#e0e0e0;"></div>
+    </div>`;
+
+  // specs PDM extra
+  let extraBoxes='';
+  if(isPDM) extraBoxes=`
+    ${box('Frente',lot.frente+' m')}
+    ${box('Largo',lot.largo+' m')}
+    ${box('Etapa',lot.etapa)}`;
+
+  // ubicacion
+  let ubicStr='';
+  if(isBDN&&lot.obs&&lot.obs!=='—') ubicStr=`<div style="font-size:11px;color:#555;margin-bottom:8px;">📍 ${lot.obs}</div>`;
+  if(isPDM) ubicStr=`<div style="font-size:11px;color:#555;margin-bottom:8px;">Vista: ${lot.vista}</div>`;
+
+  // regla beneficio — no se muestra al cliente
+  const reglaStr='';
+
+  // planes financiamiento
+  let planesHtml='';
+  if(pct>=0.10&&saldo>0&&nCIf>0){
+    planesHtml=`
+      <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
+        margin:7px 0 5px;display:flex;align-items:center;gap:6px;">
+        Financiamiento del Saldo<div style="flex:1;height:1px;background:#ddd;"></div>
+      </div>
+      <div style="background:#f4f6ff;border:1.5px solid #b8c4f5;border-radius:8px;padding:10px 12px;">
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:8px;letter-spacing:.8px;text-transform:uppercase;
+          color:#22285D;background:#b8c4f5;border-radius:20px;display:inline-block;padding:2px 9px;margin-bottom:7px;">
+          FINANCIAMIENTO · TEA 22%
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:8px;color:#999;text-transform:uppercase;letter-spacing:.6px;margin-bottom:1px;">Cuota mensual</div>
+            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:#22285D;">${sx} ${fmt(cuotaCI)}</div>
+            <div style="font-size:9px;color:#888;margin-top:2px;">${nCIf} cuotas</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:8px;color:#888;">Saldo financiado</div>
+            <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#22285D;">${sx} ${fmt(saldo)}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // estructura de pago
+  let pagosHtml='';
+  if(pct>=0.10){
+    pagosHtml=`
+      <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
+        margin:7px 0 5px;display:flex;align-items:center;gap:6px;">
+        Estructura de Pago<div style="flex:1;height:1px;background:#ddd;"></div>
+      </div>
+      <div style="background:#f5f5f5;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-size:10px;color:#666;">💰 Cuota Inicial</span>
+        <div style="text-align:right;">
+          <div style="font-family:Arial,sans-serif;font-weight:800;font-size:15px;color:#22285D;">${sx} ${fmt(ini)}</div>
+          ${ST.fracCuotas>=2
+            ?`<div style="font-size:9px;color:#888;margin-top:2px;">${ST.fracCuotas} cuotas de ${sx} ${fmt(ini/ST.fracCuotas)} c/u</div>`
+            :`<div style="font-size:9px;color:#888;margin-top:2px;">Pago único</div>`}
+        </div>
+      </div>
+      <div style="background:${TC};border-radius:6px;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;margin:5px 0;">
+        <span style="font-size:9px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px;">Saldo a Financiar</span>
+        <span style="font-family:Arial,sans-serif;font-weight:900;font-size:16px;color:white;">${sx} ${fmt(saldo)}</span>
+      </div>
+      ${planesHtml}`;
+  }
+
+  // asterisco fin de mes
+  const astHtml=esFin?`
+    <div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:7px;padding:8px 14px;font-size:9px;color:#e65100;margin-top:10px;line-height:1.6;">
+      * Los beneficios y promociones son válidos únicamente en el mes en curso.
+      Los precios podrían variar a partir del 1° del mes siguiente.
+    </div>`:'';
+
+  // cuentas bancarias según moneda
+  const cuentasBCP = moneda==='PEN'
+    ? {banco:'BCP', cuenta:'305-2055529-0-25', cci:'002-305-002055529025-11'}
+    : {banco:'BCP', cuenta:'305-2055532-1-66', cci:'002-305-002055532166-18'};
+  const cuentasBBVA = moneda==='PEN'
+    ? {banco:'BBVA', cuenta:'0011-0285-01-00197309', cci:'011-285-0001001973 09-46'}
+    : {banco:'BBVA', cuenta:'0011-0285-01-00200539', cci:'011-285-0001002005 39-43'};
+  const monedaNombre = moneda==='PEN'?'Soles':'Dólares';
+
+  const cuentasHtml=`
+    <div style="border-top:1.5px dashed #ddd;margin:14px 0;"></div>
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
+      color:#22285D;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+      Cuentas Bancarias en ${monedaNombre}
+      <div style="flex:1;height:1px;background:#ddd;"></div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:220px;background:#f5f5f5;border-radius:8px;padding:12px 16px;border-left:4px solid #0066cc;">
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#0066cc;margin-bottom:8px;">🏦 ${cuentasBCP.banco}</div>
+        <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;color:#22285D;margin-bottom:6px;">${cuentasBCP.cuenta}</div>
+        <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
+        <div style="font-family:Arial,sans-serif;font-weight:600;font-size:12px;color:#555;">${cuentasBCP.cci}</div>
+      </div>
+      <div style="flex:1;min-width:220px;background:#f5f5f5;border-radius:8px;padding:12px 16px;border-left:4px solid #004999;">
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#004999;margin-bottom:8px;">🏦 ${cuentasBBVA.banco}</div>
+        <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;color:#22285D;margin-bottom:6px;">${cuentasBBVA.cuenta}</div>
+        <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
+        <div style="font-family:Arial,sans-serif;font-weight:600;font-size:12px;color:#555;">${cuentasBBVA.cci}</div>
+      </div>
+    </div>
+    <div style="font-size:9px;color:#888;margin-top:6px;">A nombre de: <strong>PORTADA BLANCA CONSTRUCTORA &amp; INMOBILIARIA</strong> · RUC: 20611225645</div>`;
+
+  // Beneficios por proyecto
+  const beneficiosPDM = [
+    '✅ A 50 m de la carretera 🛣️',
+    '✅ Alta plusvalía 💰🚀',
+    '✅ Lotes desde 90 m² 📐',
+    '🔒 Pórtico de ingreso',
+    '🔒 Cerco perimétrico',
+    '✅ Predio inscrito en SUNARP 📝 (único dueño)',
+    '✅ Licencia de Habilitación Urbana Aprobada',
+    '✅ Obras Sanitarias 🚿 concluidas',
+    '✅ Obras Eléctricas ⚡ concluidas',
+    '✅ Parques, pistas y veredas en ejecución 👷🏻',
+    '✅ Entrega Fines de 2026 ✨',
+  ];
+  const beneficiosBDN = [
+    '✅ Vive en el campo sin alejarte de la ciudad',
+    '✅ A 5 min de Lambayeque y 10 de Chiclayo 🚗',
+    '✅ Lotes desde 300 m² 📐',
+    '🔒 Pórtico de ingreso',
+    '🌿 Cerco vivo perimétrico',
+    '✅ Alta plusvalía 📈💰',
+    '✅ Área social: zona de hamacas 🍃, parrillas 🥩, fogatas 🔥, juegos para niños 👨‍👦‍👦 y sala multiusos ✨',
+  ];
+  const beneficios = isBDN ? beneficiosBDN : beneficiosPDM;
+  const accentColor = isBDN ? '#3EB1C0' : '#6AC3CC';
+  const darkColor   = isBDN ? '#073752' : '#103652';
+
+  const beneficiosHtml=`
+    <div style="border-radius:10px;overflow:hidden;margin-bottom:8px;
+      border:1.5px solid ${accentColor};">
+      <!-- Cabecera -->
+      <div style="background:${darkColor};padding:8px 14px;display:flex;align-items:center;gap:8px;">
+        <div style="background:${accentColor};border-radius:20px;padding:3px 10px;
+          font-family:Arial,sans-serif;font-weight:700;font-size:9px;letter-spacing:.8px;
+          text-transform:uppercase;color:${darkColor};">
+          🏡 Beneficios del Proyecto
+        </div>
+        <div style="font-family:Arial,sans-serif;font-weight:800;font-size:11px;color:white;">
+          ${isBDN ? 'Condominio Brisas de Naylamp' : 'Residencial Puerta del Mar'}
+        </div>
+      </div>
+      <!-- Chips grid -->
+      <div style="background:white;padding:8px 10px;
+        display:grid;grid-template-columns:repeat(2,1fr);gap:4px;">
+        ${beneficios.map(b=>`
+          <div style="background:#f7f9fc;border-radius:6px;padding:5px 8px;
+            border-left:3px solid ${accentColor};font-size:8.5px;color:#22285D;
+            line-height:1.4;">${b}</div>
+        `).join('')}
+      </div>
+    </div>`;
+
+  const vendedorRaw=document.getElementById('vendedor-select').value;
+  const [vendNombre='',vendCel=''] = vendedorRaw?vendedorRaw.split('|'):[];
+
+  const fullHTML=`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cotizacion Lote ${lot.id} - Portada Blanca</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{font-family:Arial,sans-serif;background:white;color:#22285D;padding:10px 14px;font-size:10px;line-height:1.4;}
+  .sec{font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
+    margin:7px 0 4px;display:flex;align-items:center;gap:6px;}
+  .sec::after{content:'';flex:1;height:1px;background:#ddd;}
+  .dash{border-top:1.5px dashed #ddd;margin:7px 0;}
+  @media print{
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
+    body{padding:4px 8px;font-size:9px;}
+    @page{size:A4 portrait;margin:5mm 6mm;}
+    .no-print{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div style="display:flex;justify-content:space-between;align-items:flex-start;
+  padding-bottom:7px;border-bottom:2.5px solid #22285D;margin-bottom:7px;">
+  <div>
+    <div style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;color:#22285D;line-height:1.2;">PORTADA BLANCA CONSTRUCTORA &amp; INMOBILIARIA</div>
+    <div style="font-size:9px;color:#888;">RUC: 20611225645 &middot; "La puerta de ingreso a tu felicidad"</div>
+  </div>
+  <div style="text-align:right;font-size:9px;color:#888;line-height:1.7;flex-shrink:0;">
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;">COTIZACION DE LOTE</div>
+    Fecha: ${fmtFecha(hoy)} &nbsp;|&nbsp; Moneda: ${monedaLabel}
+  </div>
+</div>
+
+<!-- BARRA PROYECTO -->
+<div style="background:${TC};border-radius:8px;padding:8px 14px;margin-bottom:7px;
+  display:flex;align-items:center;gap:10px;">
+  <span style="font-family:Arial,sans-serif;font-weight:900;font-size:12px;color:white;letter-spacing:.3px;">
+    ${isBDN?'CONDOMINIO BRISAS DE NAYLAMP — LAMBAYEQUE':'RESIDENCIAL PUERTA DEL MAR — PIMENTEL'}
+  </span>
+  <span style="background:${AC};color:${TC};border-radius:20px;padding:3px 12px;
+    font-family:Arial,sans-serif;font-weight:700;font-size:10px;white-space:nowrap;">
+    LOTE ${lot.id}
+  </span>
+</div>
+
+<!-- SPECS -->
+<div class="sec">Especificaciones del Lote</div>
+${ubicStr}
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+  <div style="background:#f5f5f5;border-radius:6px;padding:6px 10px;flex:1;min-width:70px;">
+    <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:#999;margin-bottom:2px;">Área Total</div>
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;">${lot.area} m²</div>
+  </div>
+  ${extraBoxes}
+  <div style="background:${TC};border-radius:6px;padding:6px 10px;flex:1;min-width:100px;">
+    <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.6);margin-bottom:2px;">Precio al Contado · ${monedaLabel}</div>
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:14px;color:white;">${sx} ${fmt(p)}</div>
+  </div>
+</div>
+
+<div class="dash"></div>
+
+${beneficiosHtml}
+
+<!-- PAGOS -->
+${pagosHtml}
+
+<!-- CUENTAS BANCARIAS -->
+${pagosHtml ? `
+<div class="dash"></div>
+<div class="sec">Cuentas Bancarias en ${monedaNombre}</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
+  <div style="flex:1;min-width:200px;background:#f5f5f5;border-radius:6px;padding:8px 12px;border-left:3px solid #0066cc;">
+    <div style="font-weight:700;font-size:10px;color:#0066cc;margin-bottom:5px;">🏦 ${cuentasBCP.banco}</div>
+    <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#22285D;margin-bottom:3px;">${cuentasBCP.cuenta}</div>
+    <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
+    <div style="font-weight:600;font-size:11px;color:#555;">${cuentasBCP.cci}</div>
+  </div>
+  <div style="flex:1;min-width:200px;background:#f5f5f5;border-radius:6px;padding:8px 12px;border-left:3px solid #004999;">
+    <div style="font-weight:700;font-size:10px;color:#004999;margin-bottom:5px;">🏦 ${cuentasBBVA.banco}</div>
+    <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#22285D;margin-bottom:3px;">${cuentasBBVA.cuenta}</div>
+    <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
+    <div style="font-weight:600;font-size:11px;color:#555;">${cuentasBBVA.cci}</div>
+  </div>
+</div>
+<div style="font-size:8px;color:#888;">A nombre de: <strong>PORTADA BLANCA CONSTRUCTORA &amp; INMOBILIARIA</strong> · RUC: 20611225645</div>
+` : ''}
+
+<!-- FOOTER -->
+<div style="margin-top:8px;padding-top:7px;border-top:1.5px solid #eee;
+  display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+  <div style="font-size:8px;color:#888;line-height:1.8;">
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:9px;color:#22285D;">Portada Blanca Constructora &amp; Inmobiliaria</div>
+    <div>Oficina Chiclayo: Calle Mar&iacute;a Izaga 778</div>
+    <div>Oficina Ferre&ntilde;afe: Calle Bol&iacute;var 306</div>
+    <div>📞 932 543 587 / 932 475 864</div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+    ${vendNombre?`
+    <div style="font-size:8px;color:#888;text-align:right;font-style:italic;margin-bottom:1px;">Si tiene alguna consulta, cont&aacute;ctese con:</div>
+    <div style="background:#f0f2f5;border:1.5px solid #b8c4f5;border-radius:7px;padding:7px 12px;text-align:right;">
+      <div style="font-size:7px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Asesor Inmobiliario</div>
+      <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;margin-bottom:4px;">${vendNombre}</div>
+      <div style="font-family:Arial,sans-serif;font-weight:900;font-size:17px;color:#4519FF;">📞 ${vendCel}</div>
+    </div>`:''}
+    <div style="background:#f5f5f5;border-radius:7px;padding:6px 14px;text-align:center;">
+      <div style="font-size:7px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;">Cotizacion valida hasta</div>
+      <div style="font-family:Arial,sans-serif;font-weight:800;font-size:12px;color:#22285D;margin-top:1px;">${fmtFecha(vence)}</div>
+    </div>
+  </div>
+</div>
+${astHtml}
+
+<div class="no-print" style="text-align:center;margin-top:16px;">
+  <button onclick="window.print()" style="background:#4519FF;color:white;border:none;border-radius:8px;
+    padding:10px 24px;font-family:Arial,sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
+    Guardar como PDF (Ctrl+P)
+  </button>
+  <p style="font-size:10px;color:#aaa;margin-top:6px;">Selecciona "Guardar como PDF" en el di&aacute;logo de impresi&oacute;n</p>
+</div>
+</body>
+</html>`;
+
+  const win=window.open('','_blank');
+  win.document.write(fullHTML);
+  win.document.close();
+  setTimeout(()=>win.print(),800);
+  } catch(e){ alert('Error al exportar: ' + e.message); console.error(e); }
+}
+</script>
+</body>
+</html>
