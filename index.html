@@ -293,6 +293,7 @@ footer strong{color:var(--pb-purple);}
   </div>
 </header>
 
+
 <main>
   <div class="selector-section">
     <h2>Proyecto y Lote</h2>
@@ -310,53 +311,53 @@ footer strong{color:var(--pb-purple);}
     </div>
     <div class="row2">
       <div class="field-wrap">
-        <label>Lote</label>
-        <select id="lot-select" onchange="onLotChange()">
-          <option value="">— Selecciona un lote —</option>
-        </select>
-      </div>
-      <div class="field-wrap">
         <label>Moneda de cotización</label>
         <div class="moneda-toggle">
           <button class="mon-btn" id="btn-pen" onclick="setMoneda('PEN')">S/ SOLES</button>
           <button class="mon-btn" id="btn-usd" onclick="setMoneda('USD')">$ DÓLARES</button>
         </div>
       </div>
+      <div class="field-wrap">
+        <label>Asesor Inmobiliario</label>
+        <select id="vendedor-select">
+          <option value="">— Selecciona el asesor —</option>
+          <option value="FERNANDEZ FRIAS MARIA DEYSI|921335028">Fernandez Frias Maria Deysi</option>
+          <option value="HUANCAS MUÑOZ MARIA KATHIA|932543587">Huancas Muñoz Maria Kathia</option>
+          <option value="MEJIA CORTEZ MIRKO DAZU|956703298">Mejia Cortez Mirko Dazu</option>
+          <option value="CHERO GASTULO JULIO ABEL|932475864">Chero Gastulo Julio Abel</option>
+        </select>
+      </div>
     </div>
-    <div class="field-wrap" style="margin-top:14px;">
-      <label>Asesor Inmobiliario</label>
-      <select id="vendedor-select">
-        <option value="">— Selecciona el asesor —</option>
-        <option value="FERNANDEZ FRIAS MARIA DEYSI|921335028">Fernandez Frias Maria Deysi</option>
-        <option value="HUANCAS MUÑOZ MARIA KATHIA|932543587">Huancas Muñoz Maria Kathia</option>
-        <option value="MEJIA CORTEZ MIRKO DAZU|956703298">Mejia Cortez Mirko Dazu</option>
-        <option value="CHERO GASTULO JULIO ABEL|932475864">Chero Gastulo Julio Abel</option>
-      </select>
+    <div style="margin-top:16px;border-top:1px dashed #e0e0e0;padding-top:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;color:var(--pb-dark);text-transform:uppercase;letter-spacing:.5px;">Lotes a cotizar</span>
+        <button onclick="addLoteSlot()" id="btn-add-lote"
+          style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--pb-purple);background:white;
+          color:var(--pb-purple);font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;cursor:pointer;">
+          + Agregar lote
+        </button>
+      </div>
+      <div id="lotes-slots"></div>
     </div>
   </div>
-
   <div id="card-container">
     <div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
         <polyline points="9 22 9 12 15 12 15 22"/>
       </svg>
-      <p>Elige un proyecto y un lote para ver su cotización</p>
+      <p>Elige un proyecto y agrega lotes para ver su cotización</p>
     </div>
   </div>
-
   <footer>
     <strong>Portada Blanca</strong> · Cl. Izaga N°778, Chiclayo · Cl. Bolívar N°306, Ferreñafe<br>
     932 543 587 / 932 475 864 · "La puerta de ingreso a tu felicidad"
   </footer>
 </main>
 
-<!-- PDF oculto -->
-<div id="pdf-template"></div>
-
 <script>
 // ── TASA: TEA 22% → tasa mensual fija ──
-const TASA_MENSUAL = Math.pow(1.22, 1/12) - 1; // ≈ 0.016736
+const TASA_MENSUAL = Math.pow(1.22, 1/12) - 1;
 function getTasa(n){ return TASA_MENSUAL; }
 
 // ── DATA ──
@@ -512,226 +513,151 @@ const DATA={
     ]}
 };
 
-// ── ESTADO ──
-let activeProject=null, moneda='PEN';
-let ST={inicialMonto:0, fracCuotas:1, siCuotas:0, ciCuotas:0, precioCustom:0};
-
 // ── HELPERS ──
 function fmt(n){return Number(n).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function S(){return moneda==='PEN'?'S/':'$';}
 function precioBase(lot){return moneda==='PEN'?lot.pen:lot.usd;}
-function precio(lot){
-  return ST.precioCustom>0?ST.precioCustom:precioBase(lot);
-}
-
-function reglaNivel(pct){
-  if(pct<0.10) return 0;
-  if(pct<0.15) return 1;   // 10-14%
-  if(pct<0.20) return 2;   // 15-19%
-  if(pct<0.25) return 3;   // 20-24%
-  return 4;                  // 25%+
-}
-function maxSI(nivel){return 0;} // Sin cuotas sin interés
-function reglaLabel(nivel){
-  return['',
-    '✅ 10–14% → Inicial fraccionable en hasta 2 cuotas',
-    '✅ 15–19% → Inicial fraccionable en hasta 3 cuotas',
-    '✅ 20–24% → Inicial fraccionable en hasta 4 cuotas',
-    '✅ 25% o más → Inicial fraccionable en hasta 5 cuotas',
-  ][nivel]||'';
-}
-function reglaCls(nivel){return['nv0','nv1','nv2','nv3','nv3'][nivel];}
-
-// Fecha/validez
+function precio(lot,customPrecio){return customPrecio>0?customPrecio:precioBase(lot);}
 function fmtFecha(d){
   const M=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   return`${d.getDate()} de ${M[d.getMonth()]} de ${d.getFullYear()}`;
 }
 function calcValidez(){
-  const hoy=new Date();
-  const vence=new Date(hoy); vence.setDate(hoy.getDate()+4);
-  // Últimos 4 días del mes
+  const hoy=new Date(); const vence=new Date(hoy); vence.setDate(hoy.getDate()+4);
   const ultimoDia=new Date(hoy.getFullYear(),hoy.getMonth()+1,0).getDate();
   const esFin=(ultimoDia-hoy.getDate())<=3;
   return{hoy,vence,esFin};
 }
 
-// ── EVENTOS ──
-function setMoneda(m){
-  moneda=m;
-  const th=activeProject||'bdn';
-  document.getElementById('btn-pen').className ='mon-btn'+(m==='PEN'?` act-${th}`:'');
-  document.getElementById('btn-usd').className ='mon-btn'+(m==='USD'?` act-${th}`:'');
-  renderCard();
-}
+// ── ESTADO ──
+let activeProject=null, moneda='PEN';
+let loteSlots=[];
+const maxSlots=3;
 
+function reglaNivel(pct){
+  if(pct<0.10) return 0; if(pct<0.15) return 1;
+  if(pct<0.20) return 2; if(pct<0.25) return 3; return 4;
+}
+function reglaLabel(nivel){
+  return['','✅ 10–14% → Inicial fraccionable en hasta 2 cuotas','✅ 15–19% → Hasta 3 cuotas','✅ 20–24% → Hasta 4 cuotas','✅ 25%+ → Hasta 5 cuotas'][nivel]||'';
+}
+function reglaCls(nivel){return['nv0','nv1','nv2','nv3','nv3'][nivel];}
+
+// ── MONEDA / PROYECTO ──
+function setMoneda(m){
+  moneda=m; const th=activeProject||'bdn';
+  document.getElementById('btn-pen').className='mon-btn'+(m==='PEN'?` act-${th}`:'');
+  document.getElementById('btn-usd').className='mon-btn'+(m==='USD'?` act-${th}`:'');
+  renderAllSlots();
+}
 function selectProject(p){
-  activeProject=p; ST={inicialMonto:0,fracCuotas:1,siCuotas:0,ciCuotas:0,precioCustom:0};
+  activeProject=p; loteSlots=[];
   document.getElementById('tab-bdn').className='proj-tab'+(p==='bdn'?' bdn-active':'');
   document.getElementById('tab-pdm').className='proj-tab'+(p==='pdm'?' pdm-active':'');
   document.getElementById('btn-pen').className='mon-btn'+(moneda==='PEN'?` act-${p}`:'');
   document.getElementById('btn-usd').className='mon-btn'+(moneda==='USD'?` act-${p}`:'');
-  const sel=document.getElementById('lot-select');
-  sel.innerHTML='<option value="">— Selecciona un lote —</option>';
-  DATA[p].lots.forEach(l=>{
-    const o=document.createElement('option');
-    o.value=l.id;
-    o.textContent=p==='pdm'?`Etapa ${l.etapa} — Lote ${l.id} (${l.area} m²)`:`Lote ${l.id} (${l.area} m²)`;
-    sel.appendChild(o);
+  document.getElementById('lotes-slots').innerHTML='';
+  addLoteSlot();
+  document.getElementById('card-container').innerHTML='<div class="empty-state"><p>Selecciona un lote en el panel</p></div>';
+  const eb=document.getElementById('export-btn-wrap'); if(eb) eb.remove();
+}
+
+function addLoteSlot(){
+  if(!activeProject){alert('Primero selecciona un proyecto');return;}
+  if(loteSlots.length>=maxSlots){alert(`Máximo ${maxSlots} lotes`);return;}
+  const idx=loteSlots.length;
+  loteSlots.push({lotId:'',ST:{inicialMonto:0,fracCuotas:1,ciCuotas:0,precioCustom:0}});
+  renderSlotSelector(idx); updateAddBtn();
+}
+function removeLoteSlot(idx){
+  loteSlots.splice(idx,1);
+  document.getElementById('lotes-slots').innerHTML='';
+  loteSlots.forEach((_,i)=>renderSlotSelector(i));
+  updateAddBtn(); renderAllCards();
+}
+function updateAddBtn(){
+  const btn=document.getElementById('btn-add-lote');
+  if(btn) btn.style.display=loteSlots.length>=maxSlots?'none':'';
+}
+
+function renderSlotSelector(idx){
+  const container=document.getElementById('lotes-slots');
+  let el=document.getElementById(`slot-${idx}`);
+  if(!el){el=document.createElement('div');el.id=`slot-${idx}`;container.appendChild(el);}
+  const proj=DATA[activeProject];
+  const opts=proj.lots.map(l=>{
+    const label=activeProject==='pdm'?`Etapa ${l.etapa} — Lote ${l.id} (${l.area} m²)`:`Lote ${l.id} (${l.area} m²)`;
+    return`<option value="${l.id}"${loteSlots[idx].lotId===l.id?' selected':''}>${label}</option>`;
+  }).join('');
+  el.innerHTML=`
+    <div style="background:#f7f9fc;border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1.5px solid #e0e0e0;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;
+          color:var(--pb-dark);background:#e8e8f0;border-radius:20px;padding:3px 10px;">Lote ${idx+1}</div>
+        <select style="flex:1;min-width:200px;" onchange="onSlotLotChange(${idx},this.value)">
+          <option value="">— Selecciona un lote —</option>${opts}
+        </select>
+        ${idx>0?`<button onclick="removeLoteSlot(${idx})" style="padding:5px 10px;border-radius:8px;
+          border:1.5px solid #ddd;background:white;color:#aaa;cursor:pointer;font-size:11px;">✕</button>`:''}
+      </div>
+    </div>`;
+}
+
+function onSlotLotChange(idx,lotId){
+  loteSlots[idx].lotId=lotId;
+  loteSlots[idx].ST={inicialMonto:0,fracCuotas:1,ciCuotas:0,precioCustom:0};
+  renderAllCards();
+}
+
+function renderAllCards(){
+  const container=document.getElementById('card-container');
+  const active=loteSlots.filter(s=>s.lotId);
+  if(!active.length){
+    container.innerHTML='<div class="empty-state"><p>Selecciona un lote en el panel</p></div>';
+    const eb=document.getElementById('export-btn-wrap'); if(eb) eb.remove(); return;
+  }
+  container.innerHTML='';
+  loteSlots.forEach((slot,i)=>{
+    if(!slot.lotId) return;
+    const div=document.createElement('div'); div.id=`card-slot-${i}`; container.appendChild(div);
   });
-  document.getElementById('card-container').innerHTML=`
-    <div class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 12h6M12 9v6"/>
-      </svg><p>Selecciona un lote del desplegable</p></div>`;
+  loteSlots.forEach((_,i)=>{if(loteSlots[i].lotId) renderCard(i);});
+  let eb=document.getElementById('export-btn-wrap');
+  if(!eb){
+    eb=document.createElement('div'); eb.id='export-btn-wrap'; eb.className='export-bar';
+    eb.innerHTML=`<button class="btn-export" onclick="exportPDF()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>Exportar Cotización PDF</button>`;
+    container.after(eb);
+  }
 }
+function renderAllSlots(){loteSlots.forEach((_,i)=>{if(loteSlots[i].lotId) renderCard(i);});}
 
-function onLotChange(){
+// ── SLOT INPUT HANDLERS ──
+function slotInicialInput(idx,v){loteSlots[idx].ST.inicialMonto=parseFloat(v)||0; updateSlotCalc(idx);}
+function slotPrecioInput(idx,v){
   if(!activeProject) return;
-  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
-  const lot=DATA[activeProject].lots.find(l=>l.id===lotId); if(!lot) return;
-  ST.inicialMonto=0;
-  ST.fracCuotas=1; ST.siCuotas=0; ST.ciCuotas=0; ST.precioCustom=0;
-  renderCard();
+  const lot=DATA[activeProject].lots.find(l=>l.id===loteSlots[idx].lotId); if(!lot) return;
+  loteSlots[idx].ST.precioCustom=parseFloat(v)||0;
+  const disp=document.getElementById(`precio-display-${idx}`);
+  if(disp) disp.textContent=`${S()} ${fmt(loteSlots[idx].ST.precioCustom||precioBase(lot))}`;
+  updateSlotCalc(idx);
 }
+function slotFrac(idx,n){loteSlots[idx].ST.fracCuotas=n; updateSlotCalc(idx);}
+function slotCiInput(idx,v){loteSlots[idx].ST.ciCuotas=parseInt(v)||0; updateSlotCalc(idx);}
 
-function onInicialInput(v){
-  ST.inicialMonto=parseFloat(v)||0;
-  updateCalc();
-}
-function onPrecioInput(v){
-  if(!activeProject) return;
-  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
-  const lot=DATA[activeProject].lots.find(l=>l.id===lotId); if(!lot) return;
-  const val=parseFloat(v)||0;
-  ST.precioCustom=val>0?val:0;
-  const disp=document.getElementById('precio-display');
-  if(disp) disp.textContent=`${S()} ${fmt(ST.precioCustom||precioBase(lot))}`;
-  updateCalc();
-}
-function setFrac(n){ST.fracCuotas=n; updateCalc();}
-function onSiInput(v){ ST.siCuotas=parseInt(v)||0; updateCalc(); }
-function onCiInput(v){ ST.ciCuotas=parseInt(v)||0; updateCalc(); }
-
-// ── ACTUALIZA SOLO LOS RESULTADOS (sin tocar inputs) ──
-function updateCalc(){
-  if(!activeProject) return;
-  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
+// ── RENDER INDIVIDUAL CARD ──
+function renderCard(idx){
+  const slot=loteSlots[idx]; if(!slot||!slot.lotId) return;
   const proj=DATA[activeProject];
-  const lot=proj.lots.find(l=>l.id===lotId); if(!lot) return;
-  const th=proj.theme;
-  const p=precio(lot), sx=S();
-  const ini=ST.inicialMonto;
-  const pct=p>0?ini/p:0;
-  const pctStr=(pct*100).toFixed(1)+'%';
-  const saldo=Math.max(0,p-ini);
-  const nivel=reglaNivel(pct);
-  const mxSI=maxSI(nivel);
-
-  // SOLO CUOTAS CON INTERÉS — TEA 22% (fórmula francesa)
-  const nCI = ST.ciCuotas;
-  const tasa = TASA_MENSUAL;
-  let cuotaCI = 0;
-  if(nCI > 0 && saldo > 0){
-    cuotaCI = saldo * tasa / (1 - Math.pow(1 + tasa, -nCI));
-  }
-  const maxCI = 120;
-
-  const g=id=>document.getElementById(id);
-
-  // badge %  const g=id=>document.getElementById(id);
-
-  // badge %
-  const pill=g('pct-pill');
-  if(pill){pill.textContent=ini>0?pctStr:'—';pill.className='pct-pill '+(ini>0?(pct<0.10?'warn':`ok-${th}`):'neutral');}
-
-  // regla
-  const rt=g('regla-tag');
-  if(rt){
-    if(ini>0&&pct<0.10){rt.style.display='';rt.className='regla-tag nv0';rt.textContent=`⚠️ Inicial mínima: 10% (${sx} ${fmt(p*0.10)})`;}
-    else if(ini>0&&nivel>=1){rt.style.display='';rt.className=`regla-tag ${reglaCls(nivel)}`;rt.textContent=reglaLabel(nivel);}
-    else rt.style.display='none';
-  }
-
-  // fraccionar — máx cuotas según tramo de inicial
-  const maxFrac = pct>=0.25?5 : pct>=0.20?4 : pct>=0.15?3 : pct>=0.10?2 : 0;
-  const fw=g('frac-wrap');
-  if(fw){
-    if(maxFrac>0&&ini>0){
-      fw.style.display='';
-      [1,2,3,4,5].forEach(n=>{
-        const b=g(`frac-btn-${n}`);
-        if(b){
-          b.style.display = n<=maxFrac ? '' : 'none';
-          b.className=`frac-btn ${ST.fracCuotas===n?`sel-${th}`:''}`;
-        }
-      });
-      // Si la selección actual supera el nuevo máximo, resetear a 1
-      if(ST.fracCuotas>maxFrac){ ST.fracCuotas=1; }
-      const fr=g('frac-result');
-      if(fr){
-        if(ST.fracCuotas>=2){fr.style.display='flex';const fv=fr.querySelector('.fv');if(fv)fv.textContent=`${sx} ${fmt(ini/ST.fracCuotas)} × ${ST.fracCuotas}`;}
-        else fr.style.display='none';
-      }
-    } else fw.style.display='none';
-  }
-
-  // referencia de iniciales (se actualiza con el precio)
-  const rg=g('ref-grid');
-  if(rg){
-    rg.innerHTML=[10,15,20,25,30].map(pct=>`
-      <div style="background:white;border-radius:9px;padding:8px 6px;text-align:center;
-        border-top:3px solid ${pct>=25?'var(--green)':pct>=20?'#90caf9':pct>=15?'#b8c4f5':'#ffcc80'};">
-        <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:14px;color:var(--pb-dark);">${pct}%</div>
-        <div style="font-size:10px;color:#888;margin-top:2px;">${sx} ${fmt(Math.round(p*pct/100))}</div>
-      </div>`).join('');
-  }
-
-  // saldo
-  const sb=g('saldo-bar');
-  if(sb){
-    if(pct>=0.10&&saldo>0){sb.style.display='flex';const sv=sb.querySelector('.sv');if(sv)sv.textContent=`${sx} ${fmt(saldo)}`;}
-    else sb.style.display='none';
-  }
-
-  // planes
-  const pw=g('planes-wrap'), av=g('planes-aviso');
-  if(pct>=0.10&&saldo>0){
-    if(pw)pw.style.display=''; if(av)av.style.display='none';
-
-    // Solo CI con TEA 22%
-    const cc=g('ci-card');if(cc)cc.className=`plan-card ci`;
-    const cmx=g('ci-max');if(cmx)cmx.textContent=`máx. ${maxCI}m`;
-    const cif=g('ci-field');if(cif)cif.max=maxCI;
-    const cv=g('ci-val');
-    if(cv) cv.textContent = nCI>0 ? `${sx} ${fmt(cuotaCI)}` : '—';
-    const cs=g('ci-sub');
-    if(cs) cs.textContent = nCI>0 ? `${nCI} cuotas · TEA 22%` : 'Ingresa número de cuotas';
-
-    const tc=g('total-cuotas');
-    if(tc) tc.innerHTML=`<strong>${nCI} meses</strong> de financiamiento (máx. ${maxCI})${nCI>maxCI?` <span style="color:var(--warn)">⚠️ Excede el máximo</span>`:''}`;
-
-  } else {
-    if(pw)pw.style.display='none';
-    if(av){
-      if(ini>0&&pct<0.10){av.style.display='';av.textContent=`⚠️ Inicial mínima: 10% del precio del lote: ${sx} ${fmt(p*0.10)}`;}
-      else av.style.display='none';
-    }
-  }
-}
-
-// ── RENDER COMPLETO (solo al cambiar lote/proyecto/moneda) ──
-function renderCard(){
-  if(!activeProject) return;
-  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
-  const proj=DATA[activeProject];
-  const lot=proj.lots.find(l=>l.id===lotId); if(!lot) return;
+  const lot=proj.lots.find(l=>l.id===slot.lotId); if(!lot) return;
   const th=proj.theme, isBDN=th==='bdn', isPDM=th==='pdm';
-  const p=precio(lot), sx=S();
+  const p=precio(lot,slot.ST.precioCustom), sx=S();
   const pcClass=moneda==='PEN'?'moneda-pen':'moneda-usd';
   const monedaLabel=moneda==='PEN'?'Soles (PEN)':'Dólares (USD)';
-  const mxSI=maxSI(reglaNivel(0));
-  const maxCI=96-ST.siCuotas;
 
   let extraSpecs='';
   if(isPDM) extraSpecs=`
@@ -743,12 +669,13 @@ function renderCard(){
     ?`<div class="ubicacion-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>${lot.obs}</div>`
     :isPDM?`<div class="ubicacion-tag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/></svg>Vista: ${lot.vista}</div>`:'';
 
-  const fracBtns=[1,2,3,4,5].map(n=>`<button id="frac-btn-${n}" class="frac-btn" onclick="setFrac(${n})">${n}c</button>`).join('');
+  const fracBtns=[1,2,3,4,5].map(n=>`<button id="frac-btn-${idx}-${n}" class="frac-btn" onclick="slotFrac(${idx},${n})">${n}c</button>`).join('');
 
-  const html=`
-  <div class="lot-card card-${th}">
+  const el=document.getElementById(`card-slot-${idx}`); if(!el) return;
+  el.innerHTML=`
+  <div class="lot-card card-${th}" style="margin-bottom:20px;">
     <div class="card-header">
-      <div class="card-badge">${proj.location}</div>
+      <div class="card-badge">${proj.location} · Lote ${idx+1} de ${loteSlots.filter(s=>s.lotId).length}</div>
       <div class="lote-id">Lote <span>${lot.id}</span></div>
       <div class="proj-label">${proj.name}</div>
     </div>
@@ -760,21 +687,17 @@ function renderCard(){
       </div>
       <div class="precio-contado ${pcClass}">
         <div class="pc-label">${monedaLabel} · Precio al contado</div>
-        <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-top:4px;">
-          <div id="precio-display" style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:26px;">${sx} ${fmt(p)}</div>
-        </div>
-        <div style="margin-top:8px;display:flex;align-items:center;gap:6px;justify-content:center;">
-          <span style="font-size:11px;opacity:.6;">Modificar precio:</span>
+        <div class="pc-amount" id="precio-display-${idx}">${sx} ${fmt(p)}</div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:6px;justify-content:center;">
+          <span style="font-size:11px;opacity:.6;">Modificar:</span>
           <div style="position:relative;">
-            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-weight:700;font-size:13px;color:var(--pb-dark);">${sx}</span>
-            <input type="number" id="precio-field" value="${p}" min="0" step="1"
-              style="padding:6px 10px 6px 28px;border-radius:8px;border:1.5px solid rgba(255,255,255,.3);
-                background:rgba(255,255,255,.15);font-family:'DM Sans',sans-serif;font-weight:600;
-                font-size:13px;color:var(--pb-dark);width:140px;outline:none;backdrop-filter:blur(4px);"
-              oninput="onPrecioInput(this.value)"/>
+            <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-weight:700;font-size:12px;color:var(--pb-dark);">${sx}</span>
+            <input type="number" value="${p}" min="0" step="1"
+              style="padding:5px 8px 5px 24px;border-radius:7px;border:1.5px solid rgba(255,255,255,.3);
+                background:rgba(255,255,255,.15);font-size:12px;color:var(--pb-dark);width:130px;outline:none;"
+              oninput="slotPrecioInput(${idx},this.value)"/>
           </div>
         </div>
-        <div class="pc-note" style="margin-top:4px;">* Puedes modificar el precio a más o a menos</div>
       </div>
       <div class="fin-sep">
         <div class="fin-title">Financiamiento</div>
@@ -783,393 +706,374 @@ function renderCard(){
           <div class="ini-row">
             <div class="ini-input-wrap">
               <span class="ini-sym">${sx}</span>
-              <input type="number" id="ini-field" value="" min="0" step="1"
-                oninput="onInicialInput(this.value)" placeholder="Ingresa el monto inicial"/>
+              <input type="number" id="ini-field-${idx}" value="" min="0" step="1"
+                oninput="slotInicialInput(${idx},this.value)" placeholder="Ingresa el monto inicial"/>
             </div>
-            <div id="pct-pill" class="pct-pill neutral">—</div>
+            <div id="pct-pill-${idx}" class="pct-pill neutral">—</div>
           </div>
-          <div id="regla-tag" class="regla-tag" style="display:none;"></div>
-          <div id="frac-wrap" class="frac-wrap" style="display:none;">
+          <div id="regla-tag-${idx}" class="regla-tag" style="display:none;"></div>
+          <div id="frac-wrap-${idx}" class="frac-wrap" style="display:none;">
             <div class="frac-label">Fraccionar inicial en cuotas:</div>
             <div class="frac-btns">${fracBtns}</div>
-            <div id="frac-result" class="frac-result" style="display:none;">
-              <span class="fl">Cuota inicial</span><span class="fv"></span>
+            <div id="frac-result-${idx}" class="frac-result" style="display:none;">
+              <span class="fl">Cuota inicial</span><span id="frac-val-${idx}" class="fv"></span>
             </div>
           </div>
-          <div id="saldo-bar" class="saldo-bar" style="display:none;">
-            <span class="sl">Saldo a financiar</span><span class="sv"></span>
+          <div id="saldo-bar-${idx}" class="saldo-bar" style="display:none;">
+            <span class="sl">Saldo a financiar</span><span id="saldo-val-${idx}" class="sv"></span>
           </div>
         </div>
-
-        <!-- REFERENCIA DE INICIALES — justo debajo de cuota inicial -->
-        <div style="background:#f7f9fc;border-radius:14px;padding:12px 14px;margin-bottom:14px;">
-          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;letter-spacing:1px;
-            text-transform:uppercase;color:var(--pb-dark);margin-bottom:10px;">📊 Referencia de Iniciales</div>
-          <div id="ref-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;"></div>
+        <div style="background:#f7f9fc;border-radius:12px;padding:10px 12px;margin-bottom:12px;">
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:10px;letter-spacing:.8px;
+            text-transform:uppercase;color:var(--pb-dark);margin-bottom:8px;">📊 Referencia de Iniciales</div>
+          <div id="ref-grid-${idx}" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;"></div>
         </div>
-
-        <div id="planes-aviso" class="aviso" style="display:none;"></div>
-        <div id="planes-wrap" style="display:none;">
-          <div class="plan-card ci" id="ci-card" style="max-width:100%;">
+        <div id="planes-aviso-${idx}" class="aviso" style="display:none;"></div>
+        <div id="plan-wrap-${idx}" style="display:none;">
+          <div class="plan-card ci">
             <div class="plan-badge">📅 Financiamiento · TEA 22%</div>
             <div class="plan-cuotas-row">
-              <label>Número de cuotas:</label>
-              <input id="ci-field" type="number" min="0" max="120" value="${ST.ciCuotas}" oninput="onCiInput(this.value)">
-              <span id="ci-max" class="max-hint">máx. 120m</span>
+              <label>Cuotas:</label>
+              <input id="ci-field-${idx}" type="number" min="0" max="120" value="0" oninput="slotCiInput(${idx},this.value)">
+              <span class="max-hint">máx. 120m</span>
             </div>
             <div class="cuota-result">
               <div class="cuota-lbl">Cuota mensual</div>
-              <div id="ci-val" class="cuota-val">—</div>
-              <div id="ci-sub" class="cuota-sub">Ingresa número de cuotas</div>
+              <div id="ci-val-${idx}" class="cuota-val">—</div>
+              <div id="ci-sub-${idx}" class="cuota-sub">Ingresa número de cuotas</div>
             </div>
           </div>
-          <div id="total-cuotas" style="text-align:right;font-size:10px;color:#aaa;margin-top:6px;"></div>
         </div>
       </div>
-
     </div>
-  </div>
-  <div class="export-bar">
-    <button class="btn-export" onclick="exportPDF()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="7 10 12 15 17 10"/>
-        <line x1="12" y1="15" x2="12" y2="3"/>
-      </svg>
-      Exportar Cotización PDF
-    </button>
   </div>`;
-
-  document.getElementById('card-container').innerHTML=html;
-  updateCalc();
+  updateSlotCalc(idx);
 }
 
-
-// ── EXPORTAR PDF ──
-function exportPDF(){
-  try {
-  if(!activeProject) return;
-  const lotId=document.getElementById('lot-select').value; if(!lotId) return;
+// ── UPDATE CALC (no DOM rebuild) ──
+function updateSlotCalc(idx){
+  const slot=loteSlots[idx]; if(!slot||!slot.lotId) return;
   const proj=DATA[activeProject];
-  const lot=proj.lots.find(l=>l.id===lotId); if(!lot) return;
-  const th=proj.theme, isBDN=th==='bdn', isPDM=th==='pdm';
-  const p=precio(lot), sx=S();
-  const ini=ST.inicialMonto;
+  const lot=proj.lots.find(l=>l.id===slot.lotId); if(!lot) return;
+  const th=proj.theme, sx=S();
+  const p=precio(lot,slot.ST.precioCustom);
+  const ini=slot.ST.inicialMonto;
   const pct=p>0?ini/p:0;
   const pctStr=(pct*100).toFixed(1)+'%';
   const saldo=Math.max(0,p-ini);
   const nivel=reglaNivel(pct);
-  const nSI=ST.siCuotas;
-  let nCI=ST.ciCuotas;
-  const totalMeses=nCI;
+  const nCI=slot.ST.ciCuotas;
   let cuotaCI=0;
-  if(nCI===0&&nSI>0){ nCI=nSI; } // fallback si había cuotas SI guardadas
-  const nCIf=nCI;
-  if(nCIf>0&&saldo>0){
-    cuotaCI=saldo*TASA_MENSUAL/(1-Math.pow(1+TASA_MENSUAL,-nCIf));
+  if(nCI>0&&saldo>0) cuotaCI=saldo*TASA_MENSUAL/(1-Math.pow(1+TASA_MENSUAL,-nCI));
+  const maxFrac=pct>=0.25?5:pct>=0.20?4:pct>=0.15?3:pct>=0.10?2:0;
+  const g=id=>document.getElementById(id);
+
+  const pill=g(`pct-pill-${idx}`);
+  if(pill){pill.textContent=ini>0?pctStr:'—';pill.className='pct-pill '+(ini>0?(pct<0.10?'warn':`ok-${th}`):'neutral');}
+
+  const rt=g(`regla-tag-${idx}`);
+  if(rt){
+    if(ini>0&&pct<0.10){rt.style.display='';rt.className='regla-tag nv0';rt.textContent=`⚠️ Inicial mínima: 10% (${sx} ${fmt(p*0.10)})`;}
+    else if(ini>0&&nivel>=1){rt.style.display='';rt.className=`regla-tag ${reglaCls(nivel)}`;rt.textContent=reglaLabel(nivel);}
+    else rt.style.display='none';
   }
-  const montoCI=saldo;
-  const {hoy,vence,esFin}=calcValidez();
-  const TC=isBDN?'#073752':'#103652';   // theme color
-  const AC=isBDN?'#3EB1C0':'#6AC3CC';  // accent color
+
+  const fw=g(`frac-wrap-${idx}`);
+  if(fw){
+    if(maxFrac>0&&ini>0){
+      fw.style.display='';
+      if(slot.ST.fracCuotas>maxFrac) slot.ST.fracCuotas=1;
+      [1,2,3,4,5].forEach(n=>{
+        const b=g(`frac-btn-${idx}-${n}`);
+        if(b){b.style.display=n<=maxFrac?'':'none';b.className='frac-btn'+(slot.ST.fracCuotas===n?' sel-'+th:'');}
+      });
+      const fr=g(`frac-result-${idx}`), fv=g(`frac-val-${idx}`);
+      if(fr&&fv){
+        if(slot.ST.fracCuotas>=2){fr.style.display='flex';fv.textContent=`${sx} ${fmt(ini/slot.ST.fracCuotas)} × ${slot.ST.fracCuotas}`;}
+        else fr.style.display='none';
+      }
+    } else fw.style.display='none';
+  }
+
+  const sb=g(`saldo-bar-${idx}`), sv=g(`saldo-val-${idx}`);
+  if(sb&&sv){
+    if(pct>=0.10&&saldo>0){sb.style.display='flex';sv.textContent=`${sx} ${fmt(saldo)}`;}
+    else sb.style.display='none';
+  }
+
+  const rg=g(`ref-grid-${idx}`);
+  if(rg) rg.innerHTML=[10,15,20,25,30].map(pc=>`
+    <div style="background:white;border-radius:8px;padding:7px 5px;text-align:center;
+      border-top:3px solid ${pc>=25?'var(--green)':pc>=20?'#90caf9':pc>=15?'#b8c4f5':'#ffcc80'};">
+      <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;color:var(--pb-dark);">${pc}%</div>
+      <div style="font-size:10px;color:#888;margin-top:1px;">${sx} ${fmt(Math.round(p*pc/100))}</div>
+    </div>`).join('');
+
+  const pw=g(`plan-wrap-${idx}`), av=g(`planes-aviso-${idx}`);
+  if(pct>=0.10&&saldo>0){
+    if(pw)pw.style.display=''; if(av)av.style.display='none';
+    const cv=g(`ci-val-${idx}`); if(cv) cv.textContent=nCI>0?`${sx} ${fmt(cuotaCI)}`:'—';
+    const cs=g(`ci-sub-${idx}`); if(cs) cs.textContent=nCI>0?`${nCI} cuotas`:'Ingresa número de cuotas';
+  } else {
+    if(pw)pw.style.display='none';
+    if(av){
+      if(ini>0&&pct<0.10){av.style.display='';av.textContent=`⚠️ Inicial mínima: 10%: ${sx} ${fmt(p*0.10)}`;}
+      else av.style.display='none';
+    }
+  }
+}
+
+// ── EXPORTAR PDF ──
+function exportPDF(){
+  try{
+  if(!activeProject) return;
+  const proj=DATA[activeProject];
+  const isBDN=activeProject==='bdn', isPDM=activeProject==='pdm';
+  const TC_=isBDN?'#073752':'#103652';
+  const AC_=isBDN?'#3EB1C0':'#6AC3CC';
+  const sx=S();
   const monedaLabel=moneda==='PEN'?'Soles (S/)':'Dólares ($)';
-  const cuotaIniStr=ST.fracCuotas>=2
-    ?`${sx} ${fmt(ini/ST.fracCuotas)} &times; ${ST.fracCuotas} cuotas`
-    :`${sx} ${fmt(ini)} <span style="font-size:11px;font-weight:400;color:#888;">(pago único)</span>`;
+  const monedaNombre=moneda==='PEN'?'Soles':'Dólares';
+  const {hoy,vence,esFin}=calcValidez();
+  const vendedorRaw=document.getElementById('vendedor-select').value;
+  const [vendNombre='',vendCel=''] = vendedorRaw?vendedorRaw.split('|'):[];
+  const activeSlots=loteSlots.filter(s=>s.lotId);
+  if(!activeSlots.length){alert('Selecciona al menos un lote');return;}
 
-  // helpers inline
-  const box=(label,val,sub='',bg='#f5f5f5',col='#22285D')=>`
-    <div style="background:${bg};border-radius:8px;padding:10px 14px;flex:1;min-width:90px;">
-      <div style="font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:${bg==='#f5f5f5'?'#999':'rgba(255,255,255,.6)'};margin-bottom:4px;">${label}</div>
-      <div style="font-family:Arial,sans-serif;font-weight:700;font-size:16px;color:${bg==='#f5f5f5'?col:'white'};">${val}</div>
-      ${sub?`<div style="font-size:9px;color:${bg==='#f5f5f5'?'#aaa':'rgba(255,255,255,.5)'};margin-top:2px;">${sub}</div>`:''}
-    </div>`;
-
-  const secTitle=(t)=>`
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
-      color:#22285D;margin:14px 0 8px;display:flex;align-items:center;gap:8px;">
-      ${t}<div style="flex:1;height:1px;background:#e0e0e0;"></div>
-    </div>`;
-
-  // specs PDM extra
-  let extraBoxes='';
-  if(isPDM) extraBoxes=`
-    ${box('Frente',lot.frente+' m')}
-    ${box('Largo',lot.largo+' m')}
-    ${box('Etapa',lot.etapa)}`;
-
-  // ubicacion
-  let ubicStr='';
-  if(isBDN&&lot.obs&&lot.obs!=='—') ubicStr=`<div style="font-size:11px;color:#555;margin-bottom:8px;">📍 ${lot.obs}</div>`;
-  if(isPDM) ubicStr=`<div style="font-size:11px;color:#555;margin-bottom:8px;">Vista: ${lot.vista}</div>`;
-
-  // regla beneficio — no se muestra al cliente
-  const reglaStr='';
-
-  // planes financiamiento
-  let planesHtml='';
-  if(pct>=0.10&&saldo>0&&nCIf>0){
-    planesHtml=`
-      <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
-        margin:7px 0 5px;display:flex;align-items:center;gap:6px;">
-        Financiamiento del Saldo<div style="flex:1;height:1px;background:#ddd;"></div>
-      </div>
-      <div style="background:#f4f6ff;border:1.5px solid #b8c4f5;border-radius:8px;padding:10px 12px;">
-        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:8px;letter-spacing:.8px;text-transform:uppercase;
-          color:#22285D;background:#b8c4f5;border-radius:20px;display:inline-block;padding:2px 9px;margin-bottom:7px;">
-          FINANCIAMIENTO · TEA 22%
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-size:8px;color:#999;text-transform:uppercase;letter-spacing:.6px;margin-bottom:1px;">Cuota mensual</div>
-            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:#22285D;">${sx} ${fmt(cuotaCI)}</div>
-            <div style="font-size:9px;color:#888;margin-top:2px;">${nCIf} cuotas</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:8px;color:#888;">Saldo financiado</div>
-            <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#22285D;">${sx} ${fmt(saldo)}</div>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  // estructura de pago
-  let pagosHtml='';
-  if(pct>=0.10){
-    pagosHtml=`
-      <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
-        margin:7px 0 5px;display:flex;align-items:center;gap:6px;">
-        Estructura de Pago<div style="flex:1;height:1px;background:#ddd;"></div>
-      </div>
-      <div style="background:#f5f5f5;border-radius:6px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-        <span style="font-size:10px;color:#666;">💰 Cuota Inicial</span>
-        <div style="text-align:right;">
-          <div style="font-family:Arial,sans-serif;font-weight:800;font-size:15px;color:#22285D;">${sx} ${fmt(ini)}</div>
-          ${ST.fracCuotas>=2
-            ?`<div style="font-size:9px;color:#888;margin-top:2px;">${ST.fracCuotas} cuotas de ${sx} ${fmt(ini/ST.fracCuotas)} c/u</div>`
-            :`<div style="font-size:9px;color:#888;margin-top:2px;">Pago único</div>`}
-        </div>
-      </div>
-      <div style="background:${TC};border-radius:6px;padding:7px 12px;display:flex;justify-content:space-between;align-items:center;margin:5px 0;">
-        <span style="font-size:9px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.5px;">Saldo a Financiar</span>
-        <span style="font-family:Arial,sans-serif;font-weight:900;font-size:16px;color:white;">${sx} ${fmt(saldo)}</span>
-      </div>
-      ${planesHtml}`;
-  }
-
-  // asterisco fin de mes
   const astHtml=esFin?`
-    <div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:7px;padding:8px 14px;font-size:9px;color:#e65100;margin-top:10px;line-height:1.6;">
+    <div style="background:#fff3e0;border:1px solid #ffcc80;border-radius:7px;padding:7px 12px;
+      font-size:9px;color:#e65100;margin-top:8px;line-height:1.6;">
       * Los beneficios y promociones son válidos únicamente en el mes en curso.
       Los precios podrían variar a partir del 1° del mes siguiente.
     </div>`:'';
 
-  // cuentas bancarias según moneda
-  const cuentasBCP = moneda==='PEN'
-    ? {banco:'BCP', cuenta:'305-2055529-0-25', cci:'002-305-002055529025-11'}
-    : {banco:'BCP', cuenta:'305-2055532-1-66', cci:'002-305-002055532166-18'};
-  const cuentasBBVA = moneda==='PEN'
-    ? {banco:'BBVA', cuenta:'0011-0285-01-00197309', cci:'011-285-0001001973 09-46'}
-    : {banco:'BBVA', cuenta:'0011-0285-01-00200539', cci:'011-285-0001002005 39-43'};
-  const monedaNombre = moneda==='PEN'?'Soles':'Dólares';
-
-  const cuentasHtml=`
-    <div style="border-top:1.5px dashed #ddd;margin:14px 0;"></div>
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;
-      color:#22285D;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
-      Cuentas Bancarias en ${monedaNombre}
-      <div style="flex:1;height:1px;background:#ddd;"></div>
-    </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:220px;background:#f5f5f5;border-radius:8px;padding:12px 16px;border-left:4px solid #0066cc;">
-        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#0066cc;margin-bottom:8px;">🏦 ${cuentasBCP.banco}</div>
-        <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
-        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;color:#22285D;margin-bottom:6px;">${cuentasBCP.cuenta}</div>
-        <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
-        <div style="font-family:Arial,sans-serif;font-weight:600;font-size:12px;color:#555;">${cuentasBCP.cci}</div>
-      </div>
-      <div style="flex:1;min-width:220px;background:#f5f5f5;border-radius:8px;padding:12px 16px;border-left:4px solid #004999;">
-        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#004999;margin-bottom:8px;">🏦 ${cuentasBBVA.banco}</div>
-        <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
-        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;color:#22285D;margin-bottom:6px;">${cuentasBBVA.cuenta}</div>
-        <div style="font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
-        <div style="font-family:Arial,sans-serif;font-weight:600;font-size:12px;color:#555;">${cuentasBBVA.cci}</div>
-      </div>
-    </div>
-    <div style="font-size:9px;color:#888;margin-top:6px;">A nombre de: <strong>PORTADA BLANCA CONSTRUCTORA &amp; INMOBILIARIA</strong> · RUC: 20611225645</div>`;
-
-  // Beneficios por proyecto
-  const beneficiosPDM = [
-    '✅ A 50 m de la carretera 🛣️',
-    '✅ Alta plusvalía 💰🚀',
-    '✅ Lotes desde 90 m² 📐',
-    '🔒 Pórtico de ingreso',
-    '🔒 Cerco perimétrico',
-    '✅ Predio inscrito en SUNARP 📝 (único dueño)',
-    '✅ Licencia de Habilitación Urbana Aprobada',
-    '✅ Obras Sanitarias 🚿 concluidas',
-    '✅ Obras Eléctricas ⚡ concluidas',
-    '✅ Parques, pistas y veredas en ejecución 👷🏻',
-    '✅ Entrega Fines de 2026 ✨',
-  ];
-  const beneficiosBDN = [
-    '✅ Vive en el campo sin alejarte de la ciudad',
-    '✅ A 5 min de Lambayeque y 10 de Chiclayo 🚗',
-    '✅ Lotes desde 300 m² 📐',
-    '🔒 Pórtico de ingreso',
-    '🌿 Cerco vivo perimétrico',
-    '✅ Alta plusvalía 📈💰',
-    '✅ Área social: zona de hamacas 🍃, parrillas 🥩, fogatas 🔥, juegos para niños 👨‍👦‍👦 y sala multiusos ✨',
-  ];
-  const beneficios = isBDN ? beneficiosBDN : beneficiosPDM;
-  const accentColor = isBDN ? '#3EB1C0' : '#6AC3CC';
-  const darkColor   = isBDN ? '#073752' : '#103652';
+  const beneficiosPDM=['✅ A 50 m de la carretera 🛣️','✅ Alta plusvalía 💰🚀','✅ Lotes desde 90 m² 📐',
+    '🔒 Pórtico de ingreso','🔒 Cerco perimétrico','✅ Predio inscrito en SUNARP 📝 (único dueño)',
+    '✅ Licencia de Habilitación Urbana Aprobada','✅ Obras Sanitarias 🚿 concluidas',
+    '✅ Obras Eléctricas ⚡ concluidas','✅ Parques, pistas y veredas en ejecución 👷🏻','✅ Entrega Fines de 2026 ✨'];
+  const beneficiosBDN=['✅ Vive en el campo sin alejarte de la ciudad','✅ A 5 min de Lambayeque y 10 de Chiclayo 🚗',
+    '✅ Lotes desde 300 m² 📐','🔒 Pórtico de ingreso','🌿 Cerco vivo perimétrico','✅ Alta plusvalía 📈💰',
+    '✅ Área social: zona de hamacas 🍃, parrillas 🥩, fogatas 🔥, juegos para niños 👨\u200d👦\u200d👦 y sala multiusos ✨'];
+  const beneficios=isBDN?beneficiosBDN:beneficiosPDM;
+  const accentColor=AC_, darkColor=TC_;
 
   const beneficiosHtml=`
-    <div style="border-radius:10px;overflow:hidden;margin-bottom:8px;
-      border:1.5px solid ${accentColor};">
-      <!-- Cabecera -->
-      <div style="background:${darkColor};padding:8px 14px;display:flex;align-items:center;gap:8px;">
-        <div style="background:${accentColor};border-radius:20px;padding:3px 10px;
-          font-family:Arial,sans-serif;font-weight:700;font-size:9px;letter-spacing:.8px;
-          text-transform:uppercase;color:${darkColor};">
-          🏡 Beneficios del Proyecto
-        </div>
-        <div style="font-family:Arial,sans-serif;font-weight:800;font-size:11px;color:white;">
-          ${isBDN ? 'Condominio Brisas de Naylamp' : 'Residencial Puerta del Mar'}
-        </div>
+    <div style="border-radius:9px;overflow:hidden;margin-bottom:8px;border:1.5px solid ${accentColor};">
+      <div style="background:${darkColor};padding:7px 12px;display:flex;align-items:center;gap:8px;">
+        <div style="background:${accentColor};border-radius:20px;padding:2px 9px;
+          font-family:Arial,sans-serif;font-weight:700;font-size:8px;letter-spacing:.8px;
+          text-transform:uppercase;color:${darkColor};">🏡 Beneficios</div>
+        <div style="font-family:Arial,sans-serif;font-weight:800;font-size:10px;color:white;">
+          ${isBDN?'Condominio Brisas de Naylamp':'Residencial Puerta del Mar'}</div>
       </div>
-      <!-- Chips grid -->
-      <div style="background:white;padding:8px 10px;
-        display:grid;grid-template-columns:repeat(2,1fr);gap:4px;">
-        ${beneficios.map(b=>`
-          <div style="background:#f7f9fc;border-radius:6px;padding:5px 8px;
-            border-left:3px solid ${accentColor};font-size:8.5px;color:#22285D;
-            line-height:1.4;">${b}</div>
-        `).join('')}
+      <div style="background:white;padding:6px 8px;display:grid;grid-template-columns:repeat(2,1fr);gap:3px;">
+        ${beneficios.map(b=>`<div style="background:#f7f9fc;border-radius:4px;padding:4px 7px;
+          border-left:3px solid ${accentColor};font-size:8px;color:#22285D;line-height:1.4;">${b}</div>`).join('')}
       </div>
     </div>`;
 
-  const vendedorRaw=document.getElementById('vendedor-select').value;
-  const [vendNombre='',vendCel=''] = vendedorRaw?vendedorRaw.split('|'):[];
+  const cuentasBCP=moneda==='PEN'
+    ?{banco:'BCP',cuenta:'305-2055529-0-25',cci:'002-305-002055529025-11'}
+    :{banco:'BCP',cuenta:'305-2055532-1-66',cci:'002-305-002055532166-18'};
+  const cuentasBBVA=moneda==='PEN'
+    ?{banco:'BBVA',cuenta:'0011-0285-01-00197309',cci:'011-285-0001001973 09-46'}
+    :{banco:'BBVA',cuenta:'0011-0285-01-00200539',cci:'011-285-0001002005 39-43'};
+
+  const cuentasHtml=`
+    <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
+      margin:8px 0 5px;display:flex;align-items:center;gap:6px;">
+      Cuentas Bancarias en ${monedaNombre}<div style="flex:1;height:1px;background:#ddd;"></div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
+      <div style="flex:1;min-width:190px;background:#f5f5f5;border-radius:6px;padding:7px 11px;border-left:3px solid #0066cc;">
+        <div style="font-weight:700;font-size:9px;color:#0066cc;margin-bottom:4px;">🏦 ${cuentasBCP.banco}</div>
+        <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;margin-bottom:2px;">${cuentasBCP.cuenta}</div>
+        <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
+        <div style="font-weight:600;font-size:10px;color:#555;">${cuentasBCP.cci}</div>
+      </div>
+      <div style="flex:1;min-width:190px;background:#f5f5f5;border-radius:6px;padding:7px 11px;border-left:3px solid #004999;">
+        <div style="font-weight:700;font-size:9px;color:#004999;margin-bottom:4px;">🏦 ${cuentasBBVA.banco}</div>
+        <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;margin-bottom:2px;">${cuentasBBVA.cuenta}</div>
+        <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
+        <div style="font-weight:600;font-size:10px;color:#555;">${cuentasBBVA.cci}</div>
+      </div>
+    </div>
+    <div style="font-size:8px;color:#888;margin-bottom:8px;">A nombre de: <strong>PORTADA BLANCA CONSTRUCTORA &amp; INMOBILIARIA</strong> · RUC: 20611225645</div>`;
+
+  function lotePdfBlock(slot,slotNum){
+    const lot=proj.lots.find(l=>l.id===slot.lotId); if(!lot) return '';
+    const p=precio(lot,slot.ST.precioCustom);
+    const ini=slot.ST.inicialMonto;
+    const pct=p>0?ini/p:0;
+    const pctStr=(pct*100).toFixed(1)+'%';
+    const saldo=Math.max(0,p-ini);
+    const nCI=slot.ST.ciCuotas;
+    let cuotaCI=0;
+    if(nCI>0&&saldo>0) cuotaCI=saldo*TASA_MENSUAL/(1-Math.pow(1+TASA_MENSUAL,-nCI));
+
+    let extraBoxes='';
+    if(isPDM) extraBoxes=`
+      <div style="background:#f5f5f5;border-radius:5px;padding:5px 8px;flex:1;min-width:55px;">
+        <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:#999;margin-bottom:1px;">Frente</div>
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;">${lot.frente} m</div>
+      </div>
+      <div style="background:#f5f5f5;border-radius:5px;padding:5px 8px;flex:1;min-width:55px;">
+        <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:#999;margin-bottom:1px;">Largo</div>
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;">${lot.largo} m</div>
+      </div>
+      <div style="background:#f5f5f5;border-radius:5px;padding:5px 8px;flex:1;min-width:55px;">
+        <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:#999;margin-bottom:1px;">Etapa</div>
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;">${lot.etapa}</div>
+      </div>`;
+
+    let ubicStr='';
+    if(isBDN&&lot.obs&&lot.obs!=='—') ubicStr=`<div style="font-size:9px;color:#555;margin-bottom:4px;">📍 ${lot.obs}</div>`;
+    if(isPDM) ubicStr=`<div style="font-size:9px;color:#555;margin-bottom:4px;">Vista: ${lot.vista}</div>`;
+
+    let planesHtml='';
+    if(saldo>0&&nCI>0){
+      planesHtml=`
+        <div style="background:#f4f6ff;border:1.5px solid #b8c4f5;border-radius:7px;padding:8px 11px;margin-top:5px;">
+          <div style="font-family:Arial,sans-serif;font-weight:700;font-size:7px;letter-spacing:.8px;
+            text-transform:uppercase;color:#22285D;background:#b8c4f5;border-radius:20px;
+            display:inline-block;padding:2px 8px;margin-bottom:6px;">FINANCIAMIENTO · TEA 22%</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;">Cuota mensual</div>
+              <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:#22285D;">${sx} ${fmt(cuotaCI)}</div>
+              <div style="margin-top:4px;">
+                <span style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;
+                  color:white;background:${TC_};border-radius:6px;padding:3px 10px;">${nCI} cuotas</span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:7px;color:#888;margin-bottom:2px;">Saldo financiado</div>
+              <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;">${sx} ${fmt(saldo)}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    let pagosHtml='';
+    if(pct>=0.10){
+      pagosHtml=`
+        <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
+          margin:6px 0 5px;display:flex;align-items:center;gap:6px;">
+          Estructura de Pago<div style="flex:1;height:1px;background:#ddd;"></div></div>
+        <div style="background:${TC_};border-radius:7px;padding:8px 12px;
+          display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <div>
+            <div style="font-size:7px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;">💰 Cuota Inicial</div>
+            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:17px;color:white;">${sx} ${fmt(ini)}</div>
+            ${slot.ST.fracCuotas>=2
+              ?`<div style="font-size:8px;color:rgba(255,255,255,.7);margin-top:2px;">${slot.ST.fracCuotas} cuotas de ${sx} ${fmt(ini/slot.ST.fracCuotas)} c/u</div>`
+              :`<div style="font-size:8px;color:rgba(255,255,255,.7);margin-top:2px;">Pago único</div>`}
+          </div>
+          <div style="background:${AC_};color:${TC_};border-radius:8px;padding:5px 11px;text-align:center;">
+            <div style="font-size:7px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:1px;">Inicial</div>
+            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;line-height:1;">${pctStr}</div>
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,.08);border-radius:6px;padding:6px 10px;
+          display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-size:8px;color:#555;text-transform:uppercase;letter-spacing:.4px;">Saldo a Financiar</span>
+          <span style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;color:#22285D;">${sx} ${fmt(saldo)}</span>
+        </div>
+        ${planesHtml}`;
+    }
+
+    return `
+      <div style="border:1.5px solid ${AC_};border-radius:9px;overflow:hidden;margin-bottom:10px;
+        page-break-inside:avoid;break-inside:avoid;">
+        <div style="background:${TC_};padding:7px 13px;display:flex;align-items:center;gap:10px;">
+          <span style="font-family:Arial,sans-serif;font-weight:900;font-size:12px;color:white;">LOTE ${lot.id}</span>
+          <span style="background:${AC_};color:${TC_};border-radius:20px;padding:2px 10px;
+            font-family:Arial,sans-serif;font-weight:700;font-size:9px;">
+            Lote ${slotNum} de ${activeSlots.length}</span>
+        </div>
+        <div style="padding:8px 11px;background:white;">
+          ${ubicStr}
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;">
+            <div style="background:#f5f5f5;border-radius:5px;padding:5px 8px;flex:1;min-width:60px;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:#999;margin-bottom:1px;">Área Total</div>
+              <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;">${lot.area} m²</div>
+            </div>
+            ${extraBoxes}
+            <div style="background:${TC_};border-radius:5px;padding:5px 8px;flex:1;min-width:80px;">
+              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.6);margin-bottom:1px;">Precio Contado</div>
+              <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;color:white;">${sx} ${fmt(p)}</div>
+            </div>
+          </div>
+          ${pagosHtml}
+        </div>
+      </div>`;
+  }
+
+  const lotesHtml=activeSlots.map((slot,i)=>lotePdfBlock(slot,i+1)).join('');
+
+  const footerHtml=`
+    <div style="padding-top:8px;border-top:1.5px solid #eee;
+      display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:8px;color:#888;line-height:1.8;">
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:9px;color:#22285D;">Portada Blanca Constructora &amp; Inmobiliaria</div>
+        <div>Oficina Chiclayo: Calle Mar&iacute;a Izaga 778</div>
+        <div>Oficina Ferre&ntilde;afe: Calle Bol&iacute;var 306</div>
+        <div>📞 932 543 587 / 932 475 864</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+        ${vendNombre?`
+        <div style="font-size:8px;color:#888;text-align:right;font-style:italic;margin-bottom:1px;">Si tiene alguna consulta, cont&aacute;ctese con:</div>
+        <div style="background:#f0f2f5;border:1.5px solid #b8c4f5;border-radius:7px;padding:7px 12px;text-align:right;">
+          <div style="font-size:7px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Asesor Inmobiliario</div>
+          <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;margin-bottom:4px;">${vendNombre}</div>
+          <div style="font-family:Arial,sans-serif;font-weight:900;font-size:17px;color:#4519FF;">📞 ${vendCel}</div>
+        </div>`:''}
+        <div style="background:#f5f5f5;border-radius:7px;padding:6px 12px;text-align:center;">
+          <div style="font-size:7px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;">Cotizacion valida hasta</div>
+          <div style="font-family:Arial,sans-serif;font-weight:800;font-size:11px;color:#22285D;margin-top:1px;">${fmtFecha(vence)}</div>
+        </div>
+      </div>
+    </div>
+    ${astHtml}`;
 
   const fullHTML=`<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<title>Cotizacion Lote ${lot.id} - Portada Blanca</title>
+<html lang="es"><head><meta charset="UTF-8">
+<title>Cotizacion - Portada Blanca</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   body{font-family:Arial,sans-serif;background:white;color:#22285D;padding:10px 14px;font-size:10px;line-height:1.4;}
-  .sec{font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
-    margin:7px 0 4px;display:flex;align-items:center;gap:6px;}
-  .sec::after{content:'';flex:1;height:1px;background:#ddd;}
-  .dash{border-top:1.5px dashed #ddd;margin:7px 0;}
   @media print{
-    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
-    body{padding:4px 8px;font-size:9px;}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
+    body{padding:4px 8px;}
     @page{size:A4 portrait;margin:5mm 6mm;}
     .no-print{display:none;}
   }
-</style>
-</head>
-<body>
-
-<!-- HEADER -->
+</style></head><body>
 <div style="display:flex;justify-content:space-between;align-items:flex-start;
-  padding-bottom:7px;border-bottom:2.5px solid #22285D;margin-bottom:7px;">
+  padding-bottom:7px;border-bottom:2.5px solid #22285D;margin-bottom:8px;">
   <div>
-    <div style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;color:#22285D;line-height:1.2;">PORTADA BLANCA CONSTRUCTORA &amp; INMOBILIARIA</div>
+    <div style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;color:#22285D;">PORTADA BLANCA CONSTRUCTORA &amp; INMOBILIARIA</div>
     <div style="font-size:9px;color:#888;">RUC: 20611225645 &middot; "La puerta de ingreso a tu felicidad"</div>
   </div>
   <div style="text-align:right;font-size:9px;color:#888;line-height:1.7;flex-shrink:0;">
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;">COTIZACION DE LOTE</div>
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;">COTIZACION DE LOTES</div>
     Fecha: ${fmtFecha(hoy)} &nbsp;|&nbsp; Moneda: ${monedaLabel}
   </div>
 </div>
-
-<!-- BARRA PROYECTO -->
-<div style="background:${TC};border-radius:8px;padding:8px 14px;margin-bottom:7px;
+<div style="background:${darkColor};border-radius:8px;padding:7px 13px;margin-bottom:8px;
   display:flex;align-items:center;gap:10px;">
-  <span style="font-family:Arial,sans-serif;font-weight:900;font-size:12px;color:white;letter-spacing:.3px;">
+  <span style="font-family:Arial,sans-serif;font-weight:900;font-size:11px;color:white;letter-spacing:.3px;">
     ${isBDN?'CONDOMINIO BRISAS DE NAYLAMP — LAMBAYEQUE':'RESIDENCIAL PUERTA DEL MAR — PIMENTEL'}
   </span>
-  <span style="background:${AC};color:${TC};border-radius:20px;padding:3px 12px;
-    font-family:Arial,sans-serif;font-weight:700;font-size:10px;white-space:nowrap;">
-    LOTE ${lot.id}
-  </span>
+  <span style="background:${accentColor};color:${darkColor};border-radius:20px;padding:2px 10px;
+    font-family:Arial,sans-serif;font-weight:700;font-size:9px;">
+    ${activeSlots.length} lote${activeSlots.length>1?'s':''} cotizado${activeSlots.length>1?'s':''}</span>
 </div>
-
-<!-- SPECS -->
-<div class="sec">Especificaciones del Lote</div>
-${ubicStr}
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-  <div style="background:#f5f5f5;border-radius:6px;padding:6px 10px;flex:1;min-width:70px;">
-    <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:#999;margin-bottom:2px;">Área Total</div>
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;">${lot.area} m²</div>
-  </div>
-  ${extraBoxes}
-  <div style="background:${TC};border-radius:6px;padding:6px 10px;flex:1;min-width:100px;">
-    <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.6);margin-bottom:2px;">Precio al Contado · ${monedaLabel}</div>
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:14px;color:white;">${sx} ${fmt(p)}</div>
-  </div>
-</div>
-
-<div class="dash"></div>
-
 ${beneficiosHtml}
-
-<!-- PAGOS -->
-${pagosHtml}
-
-<!-- CUENTAS BANCARIAS -->
-${pagosHtml ? `
-<div class="dash"></div>
-<div class="sec">Cuentas Bancarias en ${monedaNombre}</div>
-<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:5px;">
-  <div style="flex:1;min-width:200px;background:#f5f5f5;border-radius:6px;padding:8px 12px;border-left:3px solid #0066cc;">
-    <div style="font-weight:700;font-size:10px;color:#0066cc;margin-bottom:5px;">🏦 ${cuentasBCP.banco}</div>
-    <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#22285D;margin-bottom:3px;">${cuentasBCP.cuenta}</div>
-    <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
-    <div style="font-weight:600;font-size:11px;color:#555;">${cuentasBCP.cci}</div>
-  </div>
-  <div style="flex:1;min-width:200px;background:#f5f5f5;border-radius:6px;padding:8px 12px;border-left:3px solid #004999;">
-    <div style="font-weight:700;font-size:10px;color:#004999;margin-bottom:5px;">🏦 ${cuentasBBVA.banco}</div>
-    <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">Cuenta ${monedaNombre}</div>
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#22285D;margin-bottom:3px;">${cuentasBBVA.cuenta}</div>
-    <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.6px;">CCI</div>
-    <div style="font-weight:600;font-size:11px;color:#555;">${cuentasBBVA.cci}</div>
-  </div>
-</div>
-<div style="font-size:8px;color:#888;">A nombre de: <strong>PORTADA BLANCA CONSTRUCTORA &amp; INMOBILIARIA</strong> · RUC: 20611225645</div>
-` : ''}
-
-<!-- FOOTER -->
-<div style="margin-top:8px;padding-top:7px;border-top:1.5px solid #eee;
-  display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;">
-  <div style="font-size:8px;color:#888;line-height:1.8;">
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:9px;color:#22285D;">Portada Blanca Constructora &amp; Inmobiliaria</div>
-    <div>Oficina Chiclayo: Calle Mar&iacute;a Izaga 778</div>
-    <div>Oficina Ferre&ntilde;afe: Calle Bol&iacute;var 306</div>
-    <div>📞 932 543 587 / 932 475 864</div>
-  </div>
-  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
-    ${vendNombre?`
-    <div style="font-size:8px;color:#888;text-align:right;font-style:italic;margin-bottom:1px;">Si tiene alguna consulta, cont&aacute;ctese con:</div>
-    <div style="background:#f0f2f5;border:1.5px solid #b8c4f5;border-radius:7px;padding:7px 12px;text-align:right;">
-      <div style="font-size:7px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Asesor Inmobiliario</div>
-      <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;margin-bottom:4px;">${vendNombre}</div>
-      <div style="font-family:Arial,sans-serif;font-weight:900;font-size:17px;color:#4519FF;">📞 ${vendCel}</div>
-    </div>`:''}
-    <div style="background:#f5f5f5;border-radius:7px;padding:6px 14px;text-align:center;">
-      <div style="font-size:7px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;">Cotizacion valida hasta</div>
-      <div style="font-family:Arial,sans-serif;font-weight:800;font-size:12px;color:#22285D;margin-top:1px;">${fmtFecha(vence)}</div>
-    </div>
-  </div>
-</div>
-${astHtml}
-
+${lotesHtml}
+${cuentasHtml}
+${footerHtml}
 <div class="no-print" style="text-align:center;margin-top:16px;">
   <button onclick="window.print()" style="background:#4519FF;color:white;border:none;border-radius:8px;
     padding:10px 24px;font-family:Arial,sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
@@ -1177,15 +1081,15 @@ ${astHtml}
   </button>
   <p style="font-size:10px;color:#aaa;margin-top:6px;">Selecciona "Guardar como PDF" en el di&aacute;logo de impresi&oacute;n</p>
 </div>
-</body>
-</html>`;
+</body></html>`;
 
   const win=window.open('','_blank');
   win.document.write(fullHTML);
   win.document.close();
   setTimeout(()=>win.print(),800);
-  } catch(e){ alert('Error al exportar: ' + e.message); console.error(e); }
+  }catch(e){alert('Error: '+e.message);console.error(e);}
 }
+
 </script>
 </body>
 </html>
