@@ -362,9 +362,6 @@ footer strong{color:var(--pb-purple);}
           <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;color:#c0392b;">
             🔐 Autorizar excepción
           </div>
-          <div style="font-size:11px;color:#aaa;margin-top:1px;">
-            Habilita modificación de precio y financiamiento sin interés
-          </div>
         </div>
       </label>
       <div id="excepcion-badge" style="display:none;margin-top:8px;background:#fdf0f0;border:1.5px solid #e74c3c;border-radius:10px;padding:8px 14px;">
@@ -376,6 +373,30 @@ footer strong{color:var(--pb-purple);}
           </div>
           <button onclick="desactivarExcepcion()" style="padding:4px 10px;border-radius:7px;
             border:1.5px solid #e74c3c;background:white;color:#c0392b;font-size:10px;
+            font-family:'Montserrat',sans-serif;font-weight:700;cursor:pointer;">✕ Desactivar</button>
+        </div>
+      </div>
+    </div>
+    <!-- OPCIÓN OTROS (descuento al contado) -->
+    <div style="margin-top:10px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="chk-otros" onchange="toggleOtros(this)"
+          style="width:18px;height:18px;cursor:pointer;accent-color:#8e44ad;">
+        <div>
+          <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;color:#8e44ad;">
+            🔐 Otros
+          </div>
+        </div>
+      </label>
+      <div id="otros-badge" style="display:none;margin-top:8px;background:#f9f0ff;border:1.5px solid #8e44ad;border-radius:10px;padding:8px 14px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:16px;">💜</span>
+          <div style="flex:1;">
+            <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:11px;color:#8e44ad;">Otros activo</div>
+            <div style="font-size:10px;color:#888;">Modificación de precio al contado habilitada</div>
+          </div>
+          <button onclick="desactivarOtros()" style="padding:4px 10px;border-radius:7px;
+            border:1.5px solid #8e44ad;background:white;color:#8e44ad;font-size:10px;
             font-family:'Montserrat',sans-serif;font-weight:700;cursor:pointer;">✕ Desactivar</button>
         </div>
       </div>
@@ -575,6 +596,7 @@ let activeProject=null, moneda='PEN';
 let loteSlots=[];
 const maxSlots=4;
 let excepcionActiva=false;
+let otrosActivo=false;
 const PASS_EXCEPCION='130119';
 
 function reglaNivel(pct){
@@ -700,8 +722,30 @@ function desactivarExcepcion(){
   const chk=document.getElementById('chk-excepcion');
   if(chk) chk.checked=false;
   document.getElementById('excepcion-badge').style.display='none';
-  // Reset SI cuotas de todos los slots
   loteSlots.forEach(s=>{s.ST.siCuotas=0;});
+  renderAllSlots();
+}
+function toggleOtros(chk){
+  if(chk.checked){
+    const pass=prompt('Ingresa la contraseña de autorización:');
+    if(pass===PASS_EXCEPCION){
+      otrosActivo=true;
+      document.getElementById('otros-badge').style.display='block';
+      renderAllSlots();
+    } else {
+      alert('Contraseña incorrecta.');
+      chk.checked=false;
+    }
+  } else {
+    desactivarOtros();
+  }
+}
+function desactivarOtros(){
+  otrosActivo=false;
+  const chk=document.getElementById('chk-otros');
+  if(chk) chk.checked=false;
+  document.getElementById('otros-badge').style.display='none';
+  loteSlots.forEach(s=>{s.ST.precioCustom=0;});
   renderAllSlots();
 }
 
@@ -758,6 +802,18 @@ function renderCard(idx){
       <div class="precio-contado ${pcClass}">
         <div class="pc-label">${monedaLabel} · Precio al contado</div>
         <div class="pc-amount" id="precio-display-${idx}">${sx} ${fmt(p)}</div>
+        ${otrosActivo?`
+        <div style="margin-top:6px;display:flex;align-items:center;gap:6px;justify-content:center;">
+          <span style="font-size:11px;opacity:.6;">💜 Precio desc.:</span>
+          <div style="position:relative;">
+            <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-weight:700;font-size:12px;color:var(--pb-dark);">${sx}</span>
+            <input type="number" value="${slot.ST.precioCustom||p}" min="0" max="${p}" step="1"
+              style="padding:5px 8px 5px 24px;border-radius:7px;border:1.5px solid rgba(142,68,173,.5);
+                background:rgba(255,255,255,.2);font-size:12px;color:var(--pb-dark);width:130px;outline:none;"
+              oninput="slotPrecioInput(${idx},this.value)"/>
+          </div>
+          ${slot.ST.precioCustom>0&&slot.ST.precioCustom<p?`<span style="font-size:10px;color:#8e44ad;font-weight:700;">-${sx} ${fmt(p-slot.ST.precioCustom)}</span>`:''}
+        </div>`:''}
         ${excepcionActiva?`
         <div style="margin-top:6px;display:flex;align-items:center;gap:6px;justify-content:center;">
           <span style="font-size:11px;opacity:.6;">🔓 Precio exc.:</span>
@@ -999,7 +1055,10 @@ function exportPDF(){
 
   function lotePdfBlock(slot,slotNum){
     const lot=proj.lots.find(l=>l.id===slot.lotId); if(!lot) return '';
+    const precioOriginal=precioBase(lot);
     const p=precio(lot,slot.ST.precioCustom);
+    const descuento=otrosActivo&&slot.ST.precioCustom>0&&slot.ST.precioCustom<precioOriginal
+      ? precioOriginal-slot.ST.precioCustom : 0;
     const ini=slot.ST.inicialMonto;
     const pct=p>0?ini/p:0;
     const pctStr=(pct*100).toFixed(1)+'%';
@@ -1026,56 +1085,59 @@ function exportPDF(){
       </div>`;
 
     let ubicStr='';
-    if(isBDN&&lot.obs&&lot.obs!=='—') ubicStr=`<div style="font-size:9px;color:#555;margin-bottom:4px;">📍 ${lot.obs}</div>`;
+    if(isBDN&&lot.obs&&lot.obs!=='—') ubicStr=`<div style="font-size:9px;color:#555;margin-bottom:4px;">${lot.obs}</div>`;
     if(isPDM) ubicStr=`<div style="font-size:9px;color:#555;margin-bottom:4px;">Vista: ${lot.vista}</div>`;
 
-    let planesHtml='';
-    if(nSI>0&&saldo>0){
-      planesHtml+=`
-        <div style="background:#fff5f5;border:1.5px solid #e74c3c;border-radius:7px;padding:8px 11px;margin-top:5px;">
-          <div style="font-family:Arial,sans-serif;font-weight:700;font-size:7px;letter-spacing:.8px;
-            text-transform:uppercase;color:white;background:#e74c3c;border-radius:20px;
-            display:inline-block;padding:2px 8px;margin-bottom:6px;">🔓 SIN INTERÉS (EXCEPCIÓN)</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div>
-              <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;">Cuota mensual</div>
-              <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:#c0392b;">${sx} ${fmt(cuotaSI)}</div>
-              <div style="margin-top:4px;">
-                <span style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;
-                  color:white;background:#c0392b;border-radius:6px;padding:3px 10px;">${nSI} cuotas</span>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:7px;color:#888;">Saldo financiado</div>
-              <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;">${sx} ${fmt(saldo)}</div>
-            </div>
-          </div>
-        </div>`;}
-    if(saldo>0&&nCI>0){
-      planesHtml=`
-        <div style="background:#f4f6ff;border:1.5px solid #b8c4f5;border-radius:7px;padding:8px 11px;margin-top:5px;">
-          <div style="font-family:Arial,sans-serif;font-weight:700;font-size:7px;letter-spacing:.8px;
-            text-transform:uppercase;color:#22285D;background:#b8c4f5;border-radius:20px;
-            display:inline-block;padding:2px 8px;margin-bottom:6px;">FINANCIAMIENTO · TEA 22%</div>
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <div>
-              <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;">Cuota mensual</div>
-              <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:#22285D;">${sx} ${fmt(cuotaCI)}</div>
-              <div style="margin-top:4px;">
-                <span style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;
-                  color:white;background:${TC_};border-radius:6px;padding:3px 10px;">${nCI} cuotas</span>
-              </div>
-            </div>
-            <div style="text-align:right;">
-              <div style="font-size:7px;color:#888;margin-bottom:2px;">Saldo financiado</div>
-              <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;">${sx} ${fmt(saldo)}</div>
-            </div>
-          </div>
-        </div>`;
-    }
+    const precioBox = descuento>0 ? `
+      <div style="background:${TC_};border-radius:5px;padding:5px 8px;flex:1;min-width:80px;">
+        <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.6);margin-bottom:1px;">Precio Lista</div>
+        <div style="font-family:Arial,sans-serif;font-size:10px;color:rgba(255,255,255,.5);text-decoration:line-through;">${sx} ${fmt(precioOriginal)}</div>
+        <div style="font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:white;">${sx} ${fmt(p)}</div>
+        <div style="background:#8e44ad;border-radius:4px;padding:1px 6px;display:inline-block;margin-top:2px;
+          font-size:7px;font-weight:700;color:white;">Dcto: -${sx} ${fmt(descuento)}</div>
+      </div>` : `
+      <div style="background:${TC_};border-radius:5px;padding:5px 8px;flex:1;min-width:80px;">
+        <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.6);margin-bottom:1px;">Precio Contado</div>
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;color:white;">${sx} ${fmt(p)}</div>
+      </div>`;
 
+    let planesHtml='';
+    if(nSI>0&&saldo>0){planesHtml+=`
+      <div style="background:#fff5f5;border:1.5px solid #e74c3c;border-radius:7px;padding:8px 11px;margin-top:5px;">
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:7px;letter-spacing:.8px;text-transform:uppercase;
+          color:white;background:#e74c3c;border-radius:20px;display:inline-block;padding:2px 8px;margin-bottom:6px;">SIN INTERÉS (EXCEPCIÓN)</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;">Cuota mensual</div>
+            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:#c0392b;">${sx} ${fmt(cuotaSI)}</div>
+            <span style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;color:white;background:#c0392b;border-radius:6px;padding:3px 10px;">${nSI} cuotas</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:7px;color:#888;">Saldo financiado</div>
+            <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;">${sx} ${fmt(saldo)}</div>
+          </div>
+        </div>
+      </div>`;}
+    if(saldo>0&&nCI>0){planesHtml+=`
+      <div style="background:#f4f6ff;border:1.5px solid #b8c4f5;border-radius:7px;padding:8px 11px;margin-top:5px;">
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:7px;letter-spacing:.8px;text-transform:uppercase;
+          color:#22285D;background:#b8c4f5;border-radius:20px;display:inline-block;padding:2px 8px;margin-bottom:6px;">FINANCIAMIENTO · TEA 22%</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:7px;color:#999;text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px;">Cuota mensual</div>
+            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:#22285D;">${sx} ${fmt(cuotaCI)}</div>
+            <span style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;color:white;background:${TC_};border-radius:6px;padding:3px 10px;">${nCI} cuotas</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:7px;color:#888;">Saldo financiado</div>
+            <div style="font-family:Arial,sans-serif;font-weight:700;font-size:11px;color:#22285D;">${sx} ${fmt(saldo)}</div>
+          </div>
+        </div>
+      </div>`;}
+
+    const inicialValida=ini>=Math.ceil(p*0.10);
     let pagosHtml='';
-    if(pct>=0.10){
+    if(!otrosActivo&&inicialValida){
       pagosHtml=`
         <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
           margin:6px 0 5px;display:flex;align-items:center;gap:6px;">
@@ -1083,7 +1145,7 @@ function exportPDF(){
         <div style="background:${TC_};border-radius:7px;padding:8px 12px;
           display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
           <div>
-            <div style="font-size:7px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;">💰 Cuota Inicial</div>
+            <div style="font-size:7px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;">Cuota Inicial</div>
             <div style="font-family:Arial,sans-serif;font-weight:900;font-size:17px;color:white;">${sx} ${fmt(ini)}</div>
             ${slot.ST.fracCuotas>=2
               ?`<div style="font-size:8px;color:rgba(255,255,255,.7);margin-top:2px;">${slot.ST.fracCuotas} cuotas de ${sx} ${fmt(ini/slot.ST.fracCuotas)} c/u</div>`
@@ -1099,17 +1161,15 @@ function exportPDF(){
           <span style="font-size:8px;color:#555;text-transform:uppercase;letter-spacing:.4px;">Saldo a Financiar</span>
           <span style="font-family:Arial,sans-serif;font-weight:900;font-size:14px;color:#22285D;">${sx} ${fmt(saldo)}</span>
         </div>
-        ${planesHtml}`;
-    }
+        ${planesHtml}`;}
 
     return `
-      <div style="border:1.5px solid ${AC_};border-radius:9px;overflow:hidden;margin-bottom:10px;
-        page-break-inside:avoid;break-inside:avoid;">
-        <div style="background:${TC_};padding:7px 13px;display:flex;align-items:center;gap:10px;">
+      <div style="border:1.5px solid ${AC_};border-radius:9px;overflow:hidden;margin-bottom:10px;page-break-inside:avoid;break-inside:avoid;">
+        <div style="background:${TC_};padding:7px 13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span style="font-family:Arial,sans-serif;font-weight:900;font-size:12px;color:white;">LOTE ${lot.id}</span>
-          <span style="background:${AC_};color:${TC_};border-radius:20px;padding:2px 10px;
-            font-family:Arial,sans-serif;font-weight:700;font-size:9px;">
+          <span style="background:${AC_};color:${TC_};border-radius:20px;padding:2px 10px;font-family:Arial,sans-serif;font-weight:700;font-size:9px;">
             Lote ${slotNum} de ${activeSlots.length}</span>
+          ${descuento>0?`<span style="background:#8e44ad;color:white;border-radius:20px;padding:2px 10px;font-family:Arial,sans-serif;font-weight:700;font-size:9px;">Descuento: ${sx} ${fmt(descuento)}</span>`:''}
         </div>
         <div style="padding:8px 11px;background:white;">
           ${ubicStr}
@@ -1119,17 +1179,51 @@ function exportPDF(){
               <div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;">${lot.area} m²</div>
             </div>
             ${extraBoxes}
-            <div style="background:${TC_};border-radius:5px;padding:5px 8px;flex:1;min-width:80px;">
-              <div style="font-size:7px;text-transform:uppercase;letter-spacing:.7px;color:rgba(255,255,255,.6);margin-bottom:1px;">Precio Contado</div>
-              <div style="font-family:Arial,sans-serif;font-weight:700;font-size:13px;color:white;">${sx} ${fmt(p)}</div>
-            </div>
+            ${precioBox}
           </div>
           ${pagosHtml}
         </div>
-      </div>`;
-  }
+      </div>`;}
+
 
   const lotesHtml=activeSlots.map((slot,i)=>lotePdfBlock(slot,i+1)).join('');
+
+  // Avisos de condiciones
+  const totalDescuento=otrosActivo?activeSlots.reduce((acc,slot)=>{
+    const lot=proj.lots.find(l=>l.id===slot.lotId); if(!lot) return acc;
+    const po=precioBase(lot); const pc=slot.ST.precioCustom;
+    return acc+(pc>0&&pc<po?po-pc:0);
+  },0):0;
+
+  const avisosHtml=`
+    ${excepcionActiva?`
+    <div style="background:#fdf0f0;border:1.5px solid #e74c3c;border-radius:8px;padding:9px 14px;margin-bottom:6px;">
+      <div style="font-family:Arial,sans-serif;font-weight:700;font-size:9px;color:#c0392b;margin-bottom:3px;">
+        ⚠️ AVISO SOBRE EXCEPCIÓN AUTORIZADA
+      </div>
+      <div style="font-size:8px;color:#555;line-height:1.5;">
+        Las excepciones otorgadas en esta cotización son válidas <strong>si y solo si</strong> se cumplen 
+        todas las condiciones de financiamiento indicadas en el presente documento. Cualquier variación 
+        en los montos, plazos o condiciones pactadas dejará sin efecto las excepciones aquí autorizadas.
+      </div>
+    </div>`:''}
+    ${otrosActivo&&totalDescuento>0?`
+    <div style="background:#f9f0ff;border:1.5px solid #8e44ad;border-radius:8px;padding:9px 14px;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:9px;color:#8e44ad;">
+          💜 DESCUENTO AL CONTADO AUTORIZADO
+        </div>
+        <div style="font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:#8e44ad;">
+          -${sx} ${fmt(totalDescuento)}
+        </div>
+      </div>
+      <div style="font-size:8px;color:#555;line-height:1.5;">
+        El descuento otorgado en esta cotización es válido <strong>si y solo si</strong> el pago se realiza 
+        íntegramente al contado en un solo desembolso. El incumplimiento de esta condición dejará 
+        sin efecto el descuento acordado.
+      </div>
+    </div>`:''}`;
+
 
   const footerHtml=`
     <div style="padding-top:8px;border-top:1.5px solid #eee;
@@ -1331,6 +1425,7 @@ function exportPDF(){
 </div>
 ${beneficiosHtml}
 ${lotesHtml}
+${avisosHtml}
 ${cuentasHtml}
 ${footerHtml}
 ${resumenHtml}
