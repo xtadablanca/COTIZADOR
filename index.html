@@ -843,6 +843,8 @@ function updateSlotCalc(idx){
   const th=proj.theme, sx=S();
   const p=precio(lot,slot.ST.precioCustom);
   const ini=slot.ST.inicialMonto;
+  // Mínimo del 10% redondeado hacia arriba para evitar decimales problemáticos
+  const minIni=Math.ceil(p*0.10);
   const pct=p>0?ini/p:0;
   const pctStr=(pct*100).toFixed(1)+'%';
   const saldo=Math.max(0,p-ini);
@@ -852,22 +854,24 @@ function updateSlotCalc(idx){
   let cuotaCI=0, cuotaSI=0;
   if(nCI>0&&saldo>0) cuotaCI=saldo*TASA_MENSUAL/(1-Math.pow(1+TASA_MENSUAL,-nCI));
   if(nSI>0&&saldo>0) cuotaSI=saldo/nSI;
-  const maxFrac=pct>=0.25?5:pct>=0.20?4:pct>=0.15?3:pct>=0.10?2:0;
+  // maxFrac y validación usan minIni en lugar de pct<0.10
+  const inicialValida = ini >= minIni;
+  const maxFrac=ini>=Math.ceil(p*0.25)?5:ini>=Math.ceil(p*0.20)?4:ini>=Math.ceil(p*0.15)?3:inicialValida?2:0;
   const g=id=>document.getElementById(id);
 
   const pill=g(`pct-pill-${idx}`);
-  if(pill){pill.textContent=ini>0?pctStr:'—';pill.className='pct-pill '+(ini>0?(pct<0.10?'warn':`ok-${th}`):'neutral');}
+  if(pill){pill.textContent=ini>0?pctStr:'—';pill.className='pct-pill '+(ini>0?(inicialValida?`ok-${th}`:'warn'):'neutral');}
 
   const rt=g(`regla-tag-${idx}`);
   if(rt){
-    if(ini>0&&pct<0.10){rt.style.display='';rt.className='regla-tag nv0';rt.textContent=`⚠️ Inicial mínima: 10% (${sx} ${fmt(p*0.10)})`;}
+    if(ini>0&&!inicialValida){rt.style.display='';rt.className='regla-tag nv0';rt.textContent=`⚠️ Inicial mínima: 10% (${sx} ${fmt(minIni)})`;}
     else if(ini>0&&nivel>=1){rt.style.display='';rt.className=`regla-tag ${reglaCls(nivel)}`;rt.textContent=reglaLabel(nivel);}
     else rt.style.display='none';
   }
 
   const fw=g(`frac-wrap-${idx}`);
   if(fw){
-    if(maxFrac>0&&ini>0){
+    if(maxFrac>0&&inicialValida){
       fw.style.display='';
       if(slot.ST.fracCuotas>maxFrac) slot.ST.fracCuotas=1;
       [1,2,3,4,5].forEach(n=>{
@@ -884,7 +888,7 @@ function updateSlotCalc(idx){
 
   const sb=g(`saldo-bar-${idx}`), sv=g(`saldo-val-${idx}`);
   if(sb&&sv){
-    if(pct>=0.10&&saldo>0){sb.style.display='flex';sv.textContent=`${sx} ${fmt(saldo)}`;}
+    if(inicialValida&&saldo>0){sb.style.display='flex';sv.textContent=`${sx} ${fmt(saldo)}`;}
     else sb.style.display='none';
   }
 
@@ -893,11 +897,11 @@ function updateSlotCalc(idx){
     <div style="background:white;border-radius:8px;padding:7px 5px;text-align:center;
       border-top:3px solid ${pc>=25?'var(--green)':pc>=20?'#90caf9':pc>=15?'#b8c4f5':'#ffcc80'};">
       <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:13px;color:var(--pb-dark);">${pc}%</div>
-      <div style="font-size:10px;color:#888;margin-top:1px;">${sx} ${fmt(Math.round(p*pc/100))}</div>
+      <div style="font-size:10px;color:#888;margin-top:1px;">${sx} ${fmt(Math.ceil(p*pc/100))}</div>
     </div>`).join('');
 
   const pw=g(`plan-wrap-${idx}`), av=g(`planes-aviso-${idx}`);
-  if(pct>=0.10&&saldo>0){
+  if(inicialValida&&saldo>0){
     if(pw)pw.style.display=''; if(av)av.style.display='none';
     // SI (excepcion)
     const siv=g(`si-val-${idx}`), sis=g(`si-sub-${idx}`);
@@ -909,7 +913,7 @@ function updateSlotCalc(idx){
   } else {
     if(pw)pw.style.display='none';
     if(av){
-      if(ini>0&&pct<0.10){av.style.display='';av.textContent=`⚠️ Inicial mínima: 10%: ${sx} ${fmt(p*0.10)}`;}
+      if(ini>0&&!inicialValida){av.style.display='';av.textContent=`⚠️ Inicial mínima: 10%: ${sx} ${fmt(minIni)}`;}
       else av.style.display='none';
     }
   }
