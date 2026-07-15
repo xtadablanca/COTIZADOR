@@ -900,9 +900,9 @@ function updateSlotCalc(idx){
   if(pct>=0.10&&saldo>0){
     if(pw)pw.style.display=''; if(av)av.style.display='none';
     // SI (excepcion)
-    const sv=g(`si-val-${idx}`), ss=g(`si-sub-${idx}`);
-    if(sv) sv.textContent=nSI>0?`${sx} ${fmt(cuotaSI)}`:'—';
-    if(ss) ss.textContent=nSI>0?`${nSI} cuotas sin interés`:'Ingresa número de cuotas';
+    const siv=g(`si-val-${idx}`), sis=g(`si-sub-${idx}`);
+    if(siv) siv.textContent=nSI>0?`${sx} ${fmt(cuotaSI)}`:'—';
+    if(sis) sis.textContent=nSI>0?`${nSI} cuotas sin interés`:'Ingresa número de cuotas';
     // CI
     const cv=g(`ci-val-${idx}`); if(cv) cv.textContent=nCI>0?`${sx} ${fmt(cuotaCI)}`:'—';
     const cs=g(`ci-sub-${idx}`); if(cs) cs.textContent=nCI>0?`${nCI} cuotas`:'Ingresa número de cuotas';
