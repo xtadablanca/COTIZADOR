@@ -754,9 +754,17 @@ function slotInicialInput(idx,v){loteSlots[idx].ST.inicialMonto=parseFloat(v)||0
 function slotPrecioInput(idx,v){
   if(!activeProject) return;
   const lot=DATA[activeProject].lots.find(l=>l.id===loteSlots[idx].lotId); if(!lot) return;
-  loteSlots[idx].ST.precioCustom=parseFloat(v)||0;
+  const base=precioBase(lot);
+  const val=parseFloat(v)||0;
+  loteSlots[idx].ST.precioCustom=val>0?val:0;
+  const sx=S();
+  const displayVal=loteSlots[idx].ST.precioCustom||base;
+  // Actualizar precio display (header)
   const disp=document.getElementById(`precio-display-${idx}`);
-  if(disp) disp.textContent=`${S()} ${fmt(loteSlots[idx].ST.precioCustom||precioBase(lot))}`;
+  if(disp) disp.textContent=`${sx} ${fmt(displayVal)}`;
+  // Actualizar monto pago al contado (modo Otros)
+  const contado=document.getElementById(`contado-monto-${idx}`);
+  if(contado) contado.textContent=`${sx} ${fmt(displayVal)}`;
   updateSlotCalc(idx);
 }
 function slotFrac(idx,n){loteSlots[idx].ST.fracCuotas=n; updateSlotCalc(idx);}
@@ -786,23 +794,11 @@ function renderCard(idx){
   const fracBtns=[1,2,3,4,5].map(n=>`<button id="frac-btn-${idx}-${n}" class="frac-btn" onclick="slotFrac(${idx},${n})">${n}c</button>`).join('');
 
   const el=document.getElementById(`card-slot-${idx}`); if(!el) return;
-  el.innerHTML=`
-  <div class="lot-card card-${th}" style="margin-bottom:20px;">
-    <div class="card-header">
-      <div class="card-badge">${proj.location} · Lote ${idx+1} de ${loteSlots.filter(s=>s.lotId).length}</div>
-      <div class="lote-id">Lote <span>${lot.id}</span></div>
-      <div class="proj-label">${proj.name}</div>
-    </div>
-    <div class="card-body">
-      ${ubicTag}
-      <div class="specs-grid">
-        <div class="spec-item"><div class="spec-label">Área Total</div><div class="spec-value">${lot.area} m²</div></div>
-        ${extraSpecs}
-      </div>
-      <div class="precio-contado ${pcClass}">
-        <div class="pc-label">${monedaLabel} · Precio al contado</div>
-        <div class="pc-amount" id="precio-display-${idx}">${sx} ${fmt(p)}</div>
-        ${otrosActivo?`
+
+  // Pre-compute conditional blocks to avoid nested backtick issues
+  const descuentoDisplay=otrosActivo&&slot.ST.precioCustom>0&&slot.ST.precioCustom<p
+    ?`<span style="font-size:10px;color:#8e44ad;font-weight:700;">-${sx} ${fmt(p-(slot.ST.precioCustom))}</span>` : '';
+  const otrosPrecioBlock=otrosActivo?`
         <div style="margin-top:6px;display:flex;align-items:center;gap:6px;justify-content:center;">
           <span style="font-size:11px;opacity:.6;">💜 Precio desc.:</span>
           <div style="position:relative;">
@@ -812,9 +808,9 @@ function renderCard(idx){
                 background:rgba(255,255,255,.2);font-size:12px;color:var(--pb-dark);width:130px;outline:none;"
               oninput="slotPrecioInput(${idx},this.value)"/>
           </div>
-          ${slot.ST.precioCustom>0&&slot.ST.precioCustom<p?`<span style="font-size:10px;color:#8e44ad;font-weight:700;">-${sx} ${fmt(p-slot.ST.precioCustom)}</span>`:''}
-        </div>`:''}
-        ${excepcionActiva?`
+          ${descuentoDisplay}
+        </div>` : '';
+  const excepcionPrecioBlock=excepcionActiva&&!otrosActivo?`
         <div style="margin-top:6px;display:flex;align-items:center;gap:6px;justify-content:center;">
           <span style="font-size:11px;opacity:.6;">🔓 Precio exc.:</span>
           <div style="position:relative;">
@@ -824,10 +820,38 @@ function renderCard(idx){
                 background:rgba(255,255,255,.2);font-size:12px;color:var(--pb-dark);width:130px;outline:none;"
               oninput="slotPrecioInput(${idx},this.value)"/>
           </div>
-        </div>`:''}
-      </div>
-      <div class="fin-sep">
-        <div class="fin-title">Financiamiento</div>
+        </div>` : '';
+  const siCardBlock=excepcionActiva?`
+          <div class="plan-card" style="background:#fff5f5;border:1.5px solid #e74c3c;margin-bottom:10px;">
+            <div class="plan-badge" style="background:#e74c3c;color:white;">🔓 Sin Interés (Excepción)</div>
+            <div class="plan-cuotas-row">
+              <label>Cuotas SI:</label>
+              <input id="si-field-${idx}" type="number" min="0" max="120" value="${slot.ST.siCuotas||0}" oninput="slotSiInput(${idx},this.value)">
+              <span class="max-hint">máx. 120m</span>
+            </div>
+            <div class="cuota-result">
+              <div class="cuota-lbl">Cuota sin interés</div>
+              <div id="si-val-${idx}" class="cuota-val" style="color:#c0392b;">—</div>
+              <div id="si-sub-${idx}" class="cuota-sub">Ingresa número de cuotas</div>
+            </div>
+          </div>` : '';
+  const contadoBlock=otrosActivo?`
+        <div style="background:var(--pb-dark);border-radius:12px;padding:14px 18px;
+          display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">
+              💰 Pago al Contado
+            </div>
+            <div id="contado-monto-${idx}" style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:26px;color:white;">
+              ${sx} ${fmt(slot.ST.precioCustom>0?slot.ST.precioCustom:p)}
+            </div>
+          </div>
+          <div style="background:#F7A812;color:var(--pb-dark);border-radius:10px;padding:8px 16px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px;">Inicial</div>
+            <div style="font-family:'Montserrat',sans-serif;font-weight:900;font-size:24px;line-height:1;">100%</div>
+          </div>
+        </div>` : '';
+  const financiamientoBlock=otrosActivo?'':`
         <div class="ini-section">
           <div style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:12px;color:var(--pb-dark);margin-bottom:10px;">💰 Cuota Inicial</div>
           <div class="ini-row">
@@ -857,20 +881,7 @@ function renderCard(idx){
         </div>
         <div id="planes-aviso-${idx}" class="aviso" style="display:none;"></div>
         <div id="plan-wrap-${idx}" style="display:none;">
-          ${excepcionActiva?`
-          <div class="plan-card" style="background:#fff5f5;border:1.5px solid #e74c3c;margin-bottom:10px;">
-            <div class="plan-badge" style="background:#e74c3c;color:white;">🔓 Sin Interés (Excepción)</div>
-            <div class="plan-cuotas-row">
-              <label>Cuotas SI:</label>
-              <input id="si-field-${idx}" type="number" min="0" max="120" value="${slot.ST.siCuotas||0}" oninput="slotSiInput(${idx},this.value)">
-              <span class="max-hint">máx. 120m</span>
-            </div>
-            <div class="cuota-result">
-              <div class="cuota-lbl">Cuota sin interés</div>
-              <div id="si-val-${idx}" class="cuota-val" style="color:#c0392b;">—</div>
-              <div id="si-sub-${idx}" class="cuota-sub">Ingresa número de cuotas</div>
-            </div>
-          </div>`:''}
+          ${siCardBlock}
           <div class="plan-card ci">
             <div class="plan-badge">📅 Financiamiento · TEA 22%</div>
             <div class="plan-cuotas-row">
@@ -884,7 +895,29 @@ function renderCard(idx){
               <div id="ci-sub-${idx}" class="cuota-sub">Ingresa número de cuotas</div>
             </div>
           </div>
-        </div>
+        </div>`;
+
+  el.innerHTML=`
+  <div class="lot-card card-${th}" style="margin-bottom:20px;">
+    <div class="card-header">
+      <div class="card-badge">${proj.location} · Lote ${idx+1} de ${loteSlots.filter(s=>s.lotId).length}</div>
+      <div class="lote-id">Lote <span>${lot.id}</span></div>
+      <div class="proj-label">${proj.name}</div>
+    </div>
+    <div class="card-body">
+      ${ubicTag}
+      <div class="specs-grid">
+        <div class="spec-item"><div class="spec-label">Área Total</div><div class="spec-value">${lot.area} m²</div></div>
+        ${extraSpecs}
+      </div>
+      <div class="precio-contado ${pcClass}">
+        <div class="pc-label">${monedaLabel} · Precio al contado</div>
+        <div class="pc-amount" id="precio-display-${idx}">${sx} ${fmt(p)}</div>
+        ${otrosPrecioBlock}${excepcionPrecioBlock}
+      </div>
+      <div class="fin-sep">
+        <div class="fin-title">${otrosActivo?'Pago al Contado':'Financiamiento'}</div>
+        ${contadoBlock}${financiamientoBlock}
       </div>
     </div>
   </div>`;
@@ -1137,7 +1170,23 @@ function exportPDF(){
 
     const inicialValida=ini>=Math.ceil(p*0.10);
     let pagosHtml='';
-    if(!otrosActivo&&inicialValida){
+    if(otrosActivo){
+      pagosHtml=`
+        <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
+          margin:6px 0 5px;display:flex;align-items:center;gap:6px;">
+          Pago al Contado<div style="flex:1;height:1px;background:#ddd;"></div></div>
+        <div style="background:${TC_};border-radius:7px;padding:10px 14px;
+          display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:7px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px;">Monto total</div>
+            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:white;">${sx} ${fmt(p)}</div>
+          </div>
+          <div style="background:${AC_};color:${TC_};border-radius:8px;padding:6px 13px;text-align:center;">
+            <div style="font-size:7px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px;">Inicial</div>
+            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:22px;line-height:1;">100%</div>
+          </div>
+        </div>`;
+    } else if(inicialValida){
       pagosHtml=`
         <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
           margin:6px 0 5px;display:flex;align-items:center;gap:6px;">
@@ -1148,8 +1197,8 @@ function exportPDF(){
             <div style="font-size:7px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;">Cuota Inicial</div>
             <div style="font-family:Arial,sans-serif;font-weight:900;font-size:17px;color:white;">${sx} ${fmt(ini)}</div>
             ${slot.ST.fracCuotas>=2
-              ?`<div style="font-size:8px;color:rgba(255,255,255,.7);margin-top:2px;">${slot.ST.fracCuotas} cuotas de ${sx} ${fmt(ini/slot.ST.fracCuotas)} c/u</div>`
-              :`<div style="font-size:8px;color:rgba(255,255,255,.7);margin-top:2px;">Pago único</div>`}
+              ?'<div style="font-size:8px;color:rgba(255,255,255,.7);margin-top:2px;">'+slot.ST.fracCuotas+' cuotas de '+sx+' '+fmt(ini/slot.ST.fracCuotas)+' c/u</div>'
+              :'<div style="font-size:8px;color:rgba(255,255,255,.7);margin-top:2px;">Pago único</div>'}
           </div>
           <div style="background:${AC_};color:${TC_};border-radius:8px;padding:5px 11px;text-align:center;">
             <div style="font-size:7px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:1px;">Inicial</div>
@@ -1254,11 +1303,17 @@ function exportPDF(){
   const incluirResumen = document.getElementById('chk-resumen')?.checked;
   let resumenHtml = '';
   if(incluirResumen && activeSlots.length > 0){
-    // Totales
-    let totalPrecio=0, totalInicial=0, totalSaldo=0, totalCuotaCI=0;
+
+    // ── Calcular totales según modo ──
+    let totalPrecioLista=0, totalPrecioDesc=0, totalDescuentoTotal=0;
+    let totalInicial=0, totalSaldo=0, totalCuotaCI=0;
+
     const resumenRows = activeSlots.map((slot,i)=>{
       const lot=proj.lots.find(l=>l.id===slot.lotId); if(!lot) return '';
+      const precioOriginal=precioBase(lot);
       const p=precio(lot,slot.ST.precioCustom);
+      const desc=otrosActivo&&slot.ST.precioCustom>0&&slot.ST.precioCustom<precioOriginal
+        ? precioOriginal-slot.ST.precioCustom : 0;
       const ini=slot.ST.inicialMonto;
       const pct=p>0?ini/p:0;
       const saldo=Math.max(0,p-ini);
@@ -1267,31 +1322,155 @@ function exportPDF(){
       let cuotaCI=0, cuotaSI=0;
       if(nCI>0&&saldo>0) cuotaCI=saldo*TASA_MENSUAL/(1-Math.pow(1+TASA_MENSUAL,-nCI));
       if(nSI>0&&saldo>0) cuotaSI=saldo/nSI;
-      totalPrecio+=p; totalInicial+=ini; totalSaldo+=saldo;
-      totalCuotaCI+=(nSI>0?cuotaSI:cuotaCI);
+      totalPrecioLista+=precioOriginal;
+      totalPrecioDesc+=p;
+      totalDescuentoTotal+=desc;
+      totalInicial+=otrosActivo?p:ini;
+      totalSaldo+=otrosActivo?0:saldo;
+      totalCuotaCI+=otrosActivo?0:(nSI>0?cuotaSI:cuotaCI);
       const pctStr=(pct*100).toFixed(1)+'%';
-      return `
+
+      if(otrosActivo){
+        // Fila modo contado: lote / área / precio lista / precio con descuento / descuento
+        return `
         <tr>
-          <td style="padding:8px 10px;border-bottom:1px solid #eee;font-weight:700;font-size:11px;color:${TC_};">Lote ${lot.id}</td>
-          <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:10px;color:#555;">${lot.area} m²${isPDM?' — Etapa '+lot.etapa:''}</td>
-          <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;color:#22285D;text-align:right;">${sx} ${fmt(p)}</td>
-          <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;font-weight:700;font-size:11px;color:${TC_};">Lote ${lot.id}</td>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;font-size:10px;color:#555;">${lot.area} m²${isPDM?' — E.'+lot.etapa:''}</td>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;font-size:11px;color:#888;text-align:right;text-decoration:${desc>0?'line-through':'none'};">${sx} ${fmt(precioOriginal)}</td>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#22285D;text-align:right;">${sx} ${fmt(p)}</td>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;text-align:right;">
+            ${desc>0
+              ?`<div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#8e44ad;">-${sx} ${fmt(desc)}</div>`
+              :`<span style="color:#ccc;font-size:10px;">—</span>`}
+          </td>
+        </tr>`;
+      } else {
+        // Fila modo financiamiento
+        return `
+        <tr>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;font-weight:700;font-size:11px;color:${TC_};">Lote ${lot.id}</td>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;font-size:10px;color:#555;">${lot.area} m²${isPDM?' — Etapa '+lot.etapa:''}</td>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;font-size:11px;color:#22285D;text-align:right;">${sx} ${fmt(p)}</td>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;text-align:right;">
             <div style="font-size:11px;font-weight:700;color:#22285D;">${sx} ${fmt(ini)}</div>
             <div style="font-size:9px;color:#888;">${pctStr}${slot.ST.fracCuotas>=2?' · '+slot.ST.fracCuotas+' cuotas':''}</div>
           </td>
-          <td style="padding:8px 10px;border-bottom:1px solid #eee;font-size:11px;color:#22285D;text-align:right;">${sx} ${fmt(saldo)}</td>
-          <td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;">
-            ${nCI>0?`<div style="font-size:11px;font-weight:700;color:#22285D;">${sx} ${fmt(cuotaCI)}</div>
-            <div style="font-size:9px;color:#888;">${nCI} cuotas</div>`:'<span style="color:#ccc;font-size:10px;">—</span>'}
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;font-size:11px;color:#22285D;text-align:right;">${sx} ${fmt(saldo)}</td>
+          <td style="padding:7px 9px;border-bottom:1px solid #eee;text-align:right;">
+            ${nCI>0?`<div style="font-size:11px;font-weight:700;color:#22285D;">${sx} ${fmt(cuotaCI)}</div><div style="font-size:9px;color:#888;">${nCI} cuotas</div>`:'<span style="color:#ccc;font-size:10px;">—</span>'}
           </td>
         </tr>`;
+      }
     }).join('');
 
-    const totalPctStr = totalPrecio>0 ? (totalInicial/totalPrecio*100).toFixed(1)+'%' : '—';
+    // ── Cabecera de tabla según modo ──
+    const theadOtros=`
+      <tr style="background:${TC_};">
+        <th style="padding:7px 9px;text-align:left;font-size:9px;color:white;font-weight:700;border-radius:6px 0 0 0;">Lote</th>
+        <th style="padding:7px 9px;text-align:left;font-size:9px;color:white;font-weight:700;">Área / Etapa</th>
+        <th style="padding:7px 9px;text-align:right;font-size:9px;color:white;font-weight:700;">Precio Lista</th>
+        <th style="padding:7px 9px;text-align:right;font-size:9px;color:white;font-weight:700;">Precio c/ Descuento</th>
+        <th style="padding:7px 9px;text-align:right;font-size:9px;color:white;font-weight:700;border-radius:0 6px 0 0;">Descuento</th>
+      </tr>`;
+    const theadFin=`
+      <tr style="background:${TC_};">
+        <th style="padding:7px 9px;text-align:left;font-size:9px;color:white;font-weight:700;border-radius:6px 0 0 0;">Lote</th>
+        <th style="padding:7px 9px;text-align:left;font-size:9px;color:white;font-weight:700;">Área / Etapa</th>
+        <th style="padding:7px 9px;text-align:right;font-size:9px;color:white;font-weight:700;">Precio</th>
+        <th style="padding:7px 9px;text-align:right;font-size:9px;color:white;font-weight:700;">Cuota Inicial</th>
+        <th style="padding:7px 9px;text-align:right;font-size:9px;color:white;font-weight:700;">Saldo</th>
+        <th style="padding:7px 9px;text-align:right;font-size:9px;color:white;font-weight:700;border-radius:0 6px 0 0;">Cuota Mensual</th>
+      </tr>`;
+
+    // ── Fila totales tabla ──
+    const tfootOtros=`
+      <tr style="background:#f7f9fc;">
+        <td colspan="2" style="padding:9px;font-family:Arial,sans-serif;font-weight:900;font-size:11px;color:#22285D;">TOTAL CONSOLIDADO</td>
+        <td style="padding:9px;text-align:right;font-family:Arial,sans-serif;font-weight:700;font-size:12px;color:#888;text-decoration:line-through;">${sx} ${fmt(totalPrecioLista)}</td>
+        <td style="padding:9px;text-align:right;font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">${sx} ${fmt(totalPrecioDesc)}</td>
+        <td style="padding:9px;text-align:right;font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:#8e44ad;">-${sx} ${fmt(totalDescuentoTotal)}</td>
+      </tr>`;
+    const tfootFin=`
+      <tr style="background:#f7f9fc;">
+        <td colspan="2" style="padding:9px;font-family:Arial,sans-serif;font-weight:900;font-size:11px;color:#22285D;">TOTAL CONSOLIDADO</td>
+        <td style="padding:9px;text-align:right;font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">${sx} ${fmt(totalPrecioDesc)}</td>
+        <td style="padding:9px;text-align:right;">
+          <div style="font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">${sx} ${fmt(totalInicial)}</div>
+          <div style="font-size:9px;color:#888;">${totalPrecioDesc>0?(totalInicial/totalPrecioDesc*100).toFixed(1)+'%':''} del total</div>
+        </td>
+        <td style="padding:9px;text-align:right;font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">${sx} ${fmt(totalSaldo)}</td>
+        <td style="padding:9px;text-align:right;font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">
+          ${totalCuotaCI>0?sx+' '+fmt(totalCuotaCI):'—'}
+          ${totalCuotaCI>0?'<div style="font-size:9px;color:#888;font-weight:400;">suma de cuotas</div>':''}
+        </td>
+      </tr>`;
+
+    // ── Bloque resumen de inversión según modo ──
+    const resumenInversionOtros=`
+      <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
+        margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+        Resumen de Inversión<div style="flex:1;height:1px;background:#ddd;"></div></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <div style="flex:1;background:#f5f5f5;border-radius:10px;padding:12px 14px;text-align:center;">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Precio de Lista</div>
+          <div style="font-family:Arial,sans-serif;font-weight:700;font-size:16px;color:#888;text-decoration:line-through;">${sx} ${fmt(totalPrecioLista)}</div>
+          <div style="font-size:9px;color:#aaa;margin-top:2px;">${activeSlots.length} lotes</div>
+        </div>
+        <div style="flex:1;background:#f9f0ff;border:2px solid #8e44ad;border-radius:10px;padding:12px 14px;text-align:center;">
+          <div style="font-size:8px;color:#8e44ad;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Descuento Total</div>
+          <div style="font-family:Arial,sans-serif;font-weight:900;font-size:18px;color:#8e44ad;">-${sx} ${fmt(totalDescuentoTotal)}</div>
+          <div style="font-size:9px;color:#8e44ad;opacity:.7;margin-top:2px;">pago al contado</div>
+        </div>
+        <div style="flex:1;background:${TC_};border-radius:10px;padding:12px 14px;text-align:center;">
+          <div style="font-size:8px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Precio Final</div>
+          <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:white;">${sx} ${fmt(totalPrecioDesc)}</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">inicial 100%</div>
+        </div>
+      </div>
+      <!-- Aviso condición descuento -->
+      <div style="background:#f9f0ff;border:1.5px solid #8e44ad;border-radius:8px;padding:9px 14px;margin-bottom:10px;">
+        <div style="font-family:Arial,sans-serif;font-weight:700;font-size:9px;color:#8e44ad;margin-bottom:3px;">
+          ⚠️ CONDICIÓN PARA APLICACIÓN DEL DESCUENTO
+        </div>
+        <div style="font-size:8px;color:#555;line-height:1.5;">
+          El descuento otorgado en esta cotización es válido <strong>si y solo si</strong> el pago se realiza 
+          íntegramente al contado en un solo desembolso. El incumplimiento de esta condición dejará 
+          sin efecto el descuento acordado.
+        </div>
+      </div>`;
+
+    const resumenInversionFin=`
+      <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
+        margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+        Resumen de Inversión<div style="flex:1;height:1px;background:#ddd;"></div></div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <div style="flex:1;background:${TC_};border-radius:10px;padding:12px 14px;text-align:center;">
+          <div style="font-size:8px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Precio Total</div>
+          <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:white;">${sx} ${fmt(totalPrecioDesc)}</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:2px;">${activeSlots.length} lotes</div>
+        </div>
+        <div style="flex:1;background:${AC_};border-radius:10px;padding:12px 14px;text-align:center;">
+          <div style="font-size:8px;color:${TC_};opacity:.7;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Inicial Total</div>
+          <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:${TC_};">${sx} ${fmt(totalInicial)}</div>
+          <div style="font-size:9px;color:${TC_};opacity:.6;margin-top:2px;">${totalPrecioDesc>0?(totalInicial/totalPrecioDesc*100).toFixed(1)+'%':''} del total</div>
+        </div>
+        <div style="flex:1;background:#f4f6ff;border:2px solid #b8c4f5;border-radius:10px;padding:12px 14px;text-align:center;">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px;">Cuota Mensual Total</div>
+          <div style="font-family:Arial,sans-serif;font-weight:900;font-size:20px;color:#22285D;">
+            ${totalCuotaCI>0?sx+' '+fmt(totalCuotaCI):'—'}
+          </div>
+          <div style="font-size:9px;color:#888;margin-top:2px;">suma de todas las cuotas</div>
+        </div>
+      </div>
+      <div style="background:#f5f5f5;border-radius:8px;padding:9px 14px;
+        display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:10px;color:#666;">Saldo total a financiar</span>
+        <span style="font-family:Arial,sans-serif;font-weight:900;font-size:15px;color:#22285D;">${sx} ${fmt(totalSaldo)}</span>
+      </div>`;
 
     resumenHtml = `
       <div style="page-break-before:always;padding-top:10px;">
-        <!-- Header resumen -->
+        <!-- Header -->
         <div style="display:flex;justify-content:space-between;align-items:flex-start;
           padding-bottom:7px;border-bottom:2.5px solid #22285D;margin-bottom:10px;">
           <div>
@@ -1303,9 +1482,8 @@ function exportPDF(){
             Fecha: ${fmtFecha(hoy)} &nbsp;|&nbsp; ${monedaLabel}
           </div>
         </div>
-
         <!-- Barra proyecto -->
-        <div style="background:${darkColor};border-radius:8px;padding:7px 13px;margin-bottom:12px;
+        <div style="background:${darkColor};border-radius:8px;padding:7px 13px;margin-bottom:10px;
           display:flex;align-items:center;gap:10px;">
           <span style="font-family:Arial,sans-serif;font-weight:900;font-size:11px;color:white;">
             ${isBDN?'CONDOMINIO BRISAS DE NAYLAMP — LAMBAYEQUE':'RESIDENCIAL PUERTA DEL MAR — PIMENTEL'}
@@ -1314,81 +1492,21 @@ function exportPDF(){
             font-family:Arial,sans-serif;font-weight:700;font-size:9px;">
             ${activeSlots.length} lote${activeSlots.length>1?'s':''}</span>
         </div>
-
-        <!-- Tabla de lotes -->
+        <!-- Tabla detalle -->
         <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
-          margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          margin-bottom:6px;display:flex;align-items:center;gap:6px;">
           Detalle por Lote<div style="flex:1;height:1px;background:#ddd;"></div></div>
-        <table style="width:100%;border-collapse:collapse;margin-bottom:14px;font-size:10px;">
-          <thead>
-            <tr style="background:${TC_};">
-              <th style="padding:7px 10px;text-align:left;font-size:9px;color:white;font-weight:700;border-radius:6px 0 0 0;">Lote</th>
-              <th style="padding:7px 10px;text-align:left;font-size:9px;color:white;font-weight:700;">Área / Etapa</th>
-              <th style="padding:7px 10px;text-align:right;font-size:9px;color:white;font-weight:700;">Precio</th>
-              <th style="padding:7px 10px;text-align:right;font-size:9px;color:white;font-weight:700;">Cuota Inicial</th>
-              <th style="padding:7px 10px;text-align:right;font-size:9px;color:white;font-weight:700;">Saldo</th>
-              <th style="padding:7px 10px;text-align:right;font-size:9px;color:white;font-weight:700;border-radius:0 6px 0 0;">Cuota Mensual</th>
-            </tr>
-          </thead>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:10px;">
+          <thead>${otrosActivo?theadOtros:theadFin}</thead>
           <tbody>${resumenRows}</tbody>
-          <tfoot>
-            <tr style="background:#f7f9fc;">
-              <td colspan="2" style="padding:10px;font-family:Arial,sans-serif;font-weight:900;font-size:11px;color:#22285D;">
-                TOTAL CONSOLIDADO
-              </td>
-              <td style="padding:10px;text-align:right;font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">
-                ${sx} ${fmt(totalPrecio)}
-              </td>
-              <td style="padding:10px;text-align:right;">
-                <div style="font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">${sx} ${fmt(totalInicial)}</div>
-                <div style="font-size:9px;color:#888;">${totalPctStr} del total</div>
-              </td>
-              <td style="padding:10px;text-align:right;font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">
-                ${sx} ${fmt(totalSaldo)}
-              </td>
-              <td style="padding:10px;text-align:right;font-family:Arial,sans-serif;font-weight:900;font-size:13px;color:${TC_};">
-                ${totalCuotaCI>0?sx+' '+fmt(totalCuotaCI):'—'}
-                ${totalCuotaCI>0?'<div style="font-size:9px;color:#888;font-weight:400;">suma de cuotas</div>':''}
-              </td>
-            </tr>
-          </tfoot>
+          <tfoot>${otrosActivo?tfootOtros:tfootFin}</tfoot>
         </table>
-
-        <!-- Resumen visual 3 bloques -->
-        <div style="font-weight:700;font-size:8px;letter-spacing:1.2px;text-transform:uppercase;color:#22285D;
-          margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-          Resumen de Inversión<div style="flex:1;height:1px;background:#ddd;"></div></div>
-        <div style="display:flex;gap:8px;margin-bottom:14px;">
-          <div style="flex:1;background:${TC_};border-radius:10px;padding:14px 16px;text-align:center;">
-            <div style="font-size:8px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Precio Total</div>
-            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:22px;color:white;">${sx} ${fmt(totalPrecio)}</div>
-            <div style="font-size:9px;color:rgba(255,255,255,.5);margin-top:3px;">${activeSlots.length} lotes</div>
-          </div>
-          <div style="flex:1;background:${AC_};border-radius:10px;padding:14px 16px;text-align:center;">
-            <div style="font-size:8px;color:${TC_};opacity:.7;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Inicial Total</div>
-            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:22px;color:${TC_};">${sx} ${fmt(totalInicial)}</div>
-            <div style="font-size:9px;color:${TC_};opacity:.6;margin-top:3px;">${totalPctStr} del total</div>
-          </div>
-          <div style="flex:1;background:#f4f6ff;border:2px solid #b8c4f5;border-radius:10px;padding:14px 16px;text-align:center;">
-            <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;">Cuota Mensual Total</div>
-            <div style="font-family:Arial,sans-serif;font-weight:900;font-size:22px;color:#22285D;">
-              ${totalCuotaCI>0?sx+' '+fmt(totalCuotaCI):'—'}
-            </div>
-            <div style="font-size:9px;color:#888;margin-top:3px;">suma de todas las cuotas</div>
-          </div>
-        </div>
-
-        <!-- Saldo total -->
-        <div style="background:#f5f5f5;border-radius:8px;padding:10px 16px;
-          display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <span style="font-size:10px;color:#666;">Saldo total a financiar</span>
-          <span style="font-family:Arial,sans-serif;font-weight:900;font-size:16px;color:#22285D;">${sx} ${fmt(totalSaldo)}</span>
-        </div>
-
-        <!-- Footer resumen -->
+        <!-- Resumen inversión -->
+        ${otrosActivo?resumenInversionOtros:resumenInversionFin}
+        <!-- Footer -->
         ${footerHtml}
-      </div>`;
-  }
+      </div>`;}
+
 
   const fullHTML=`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8">
